@@ -1,0 +1,7 @@
+.env
+store.db
+store.db-*
+ecommerce.db
+ecommerce.db-*
+generated_invoices/
+uploads/

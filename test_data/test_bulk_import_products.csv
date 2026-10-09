@@ -1,0 +1,5 @@
+name,price,category,image,description,stock
+Sony WH-1000XM5 Wireless Headphones,29999.00,Electronics,https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500,Industry-leading noise canceling headphones with dual processors,15
+Logitech MX Master 3S Wireless Mouse,8995.00,Electronics,https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500,Performance wireless ergonomic mouse with 8K DPI sensor,40
+Mechanical Gaming Keyboard RGB,4500.00,Electronics,https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500,Tactile mechanical switches with customizable per-key RGB backlighting,25
+Invalid Price Faulty Product,-199.00,Electronics,https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500,Defective item with negative price for error testing,5

@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,/products/{id} [Details],HTTPError('404 Client Error: Not Found for url: /products/{id} [Details]'),6,2026-10-09T05:55:16Z,2026-10-09T05:55:27Z

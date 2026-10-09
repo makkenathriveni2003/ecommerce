@@ -1,0 +1,32 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.log
+backend/uvicorn*.log
+backend/temp_uploads/
+backend/generated_invoices/
+dump.rdb
+
+# Secrets
+backend/.env
+frontend/.env
+*.env.local
+
+# Vector database
+chroma_db/
+backend/chroma_db/
+
+# Node
+frontend/node_modules/
+node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/e2e-temp/
+
+# SQLite databases (preserve day10_ecommerce.db if needed or ignore local dev db)
+*.db
+!ecommerce.db
