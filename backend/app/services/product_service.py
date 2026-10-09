@@ -105,7 +105,13 @@ def create_product(product: ProductData) -> Dict[str, Any]:
         ).fetchone()
     if row is None:
         raise RuntimeError("The database did not return the new product")
-    return dict(row)
+    res = dict(row)
+    try:
+        from .ai import CatalogIndexer
+        CatalogIndexer().index_single_product(res)
+    except Exception:
+        pass
+    return res
 
 
 def update_product(product_id: int, product: ProductData) -> Dict[str, Any]:
@@ -121,7 +127,13 @@ def update_product(product_id: int, product: ProductData) -> Dict[str, Any]:
         ).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Product not found")
-    return dict(row)
+    res = dict(row)
+    try:
+        from .ai import CatalogIndexer
+        CatalogIndexer().index_single_product(res)
+    except Exception:
+        pass
+    return res
 
 
 def delete_product(product_id: int) -> Dict[str, Any]:

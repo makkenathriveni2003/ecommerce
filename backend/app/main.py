@@ -16,7 +16,7 @@ from .db.database import initialize_database
 from .middleware.compression import setup_compression
 from .middleware.security_headers import SecurityHeadersMiddleware
 
-from .api.routers import admin, auth, chat, orders, products, tasks, websocket
+from .api.routers import admin, ai, auth, chat, orders, products, tasks, websocket
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("shopzone_api")
@@ -27,6 +27,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     validate_token_configuration()
     initialize_database()
     app.state.database_ready = True
+
+    # Seed ChromaDB vector store if empty
+    try:
+        from .services.ai import CatalogIndexer, ChromaVectorStore
+        store = ChromaVectorStore()
+        if store.count() == 0:
+            logger.info("ChromaDB vector store is empty on startup. Indexing catalogue...")
+            CatalogIndexer(vector_store=store).reindex_all_products(clear_existing=False)
+    except Exception as init_ai_err:
+        logger.warning("ChromaDB initial catalog indexing deferred: %s", init_ai_err)
+
     yield
 
 
@@ -110,6 +121,8 @@ app.include_router(admin.router)
 app.include_router(tasks.router)
 app.include_router(chat.router)
 app.include_router(websocket.router)
+app.include_router(ai.router, prefix="/api")
+app.include_router(ai.router)
 
 
 @app.get("/")

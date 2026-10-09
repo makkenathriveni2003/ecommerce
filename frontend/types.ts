@@ -112,3 +112,32 @@ export interface WebSocketMessage<T = unknown> {
   data?: T
   message?: string
 }
+
+export interface AICitation {
+  product_id: number
+  product_name: string
+  category: string
+  price: number
+  stock: number
+  url: string
+}
+
+export interface AIChatMessage {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  provider?: string
+  model?: string
+  citations?: AICitation[]
+  isStreaming?: boolean
+  error?: string
+  timestamp: string
+}
+
+export interface AIStatus {
+  primary_provider: string
+  fallback_providers: string[]
+  embedding_provider: string
+  indexed_vectors_count: number
+  configured_providers: Record<string, boolean>
+}

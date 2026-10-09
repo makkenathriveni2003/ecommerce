@@ -19,6 +19,7 @@ const OrderHistory = lazy(() => import("./pages/OrderHistory"))
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"))
 const Login = lazy(() => import("./pages/Login"))
 const BackgroundJobs = lazy(() => import("./pages/BackgroundJobs").then(m => ({ default: m.BackgroundJobs })))
+const AiAssistant = lazy(() => import("./pages/AiAssistant").then(m => ({ default: m.AiAssistant })))
 
 type Theme = "light" | "dark"
 
@@ -107,6 +108,7 @@ export default function App() {
             Bag <span className="cart-count" aria-label={`${cartCount} ${cartCount === 1 ? "item" : "items"}`}>{cartCount}</span>
           </NavLink>
           <NavLink to="/tasks">Background Jobs</NavLink>
+          <NavLink to="/ai-assistant">AI Assistant</NavLink>
           {user?.role === "admin" && <NavLink to="/manage">Add products</NavLink>}
           {user && <NavLink to="/orders">Orders</NavLink>}
           {user?.role === "admin" && <NavLink to="/admin">Admin</NavLink>}
@@ -204,6 +206,8 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/tasks" element={<BackgroundJobs />} />
             <Route path="/jobs" element={<BackgroundJobs />} />
+            <Route path="/ai-assistant" element={<AiAssistant />} />
+            <Route path="/assistant" element={<AiAssistant />} />
             <Route path="*" element={<Products />} />
           </Routes>
         </Suspense>

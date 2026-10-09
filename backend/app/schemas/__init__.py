@@ -5,11 +5,18 @@ from .schemas import (
     OrderData,
     ProductData,
     BulkImportResponse,
-    OrderStatusData,
     ChatMessageCreate,
     ChatMessageOut,
     TaskTriggerRequest,
     TaskStatusResponse,
+)
+from .ai_schemas import (
+    AIChatHistoryItem,
+    AIChatRequest,
+    AIChatResponse,
+    AICitation,
+    AIIndexResponse,
+    AIStatusResponse,
 )
 
 __all__ = [
@@ -24,4 +31,10 @@ __all__ = [
     "ChatMessageOut",
     "TaskTriggerRequest",
     "TaskStatusResponse",
+    "AIChatHistoryItem",
+    "AIChatRequest",
+    "AIChatResponse",
+    "AICitation",
+    "AIIndexResponse",
+    "AIStatusResponse",
 ]
