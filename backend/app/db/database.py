@@ -217,6 +217,14 @@ DEFAULT_CATALOG = [
         "description": "Premium white T-shirt featuring a bold Devara-inspired design. Comfortable fabric, stylish look, and perfect for movie fans and casual wear. Printed T-shirt with cinematic warrior print. Original Price: ₹999 (40% off). Sizes: S, M, L, XL, XXL. Color: White.",
         "stock": 25,
     },
+    {
+        "name": "TDP Logo T-Shirt",
+        "price": 499.0,
+        "category": "Fashion",
+        "image": "/images/tdp_logo_tshirt.jpg",
+        "description": "Show your support with this premium TDP logo t-shirt. Made from soft, breathable cotton for all-day comfort. Perfect for rallies, events or casual wear. 100% Cotton (Bio Wash), High Quality Fade Resistant Digital Print, Regular Fit. Colors: Yellow, White, Black. Sizes: S, M, L, XL, XXL.",
+        "stock": 50,
+    },
 ]
 
 
