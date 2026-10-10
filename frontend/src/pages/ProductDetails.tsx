@@ -6,12 +6,34 @@ import { useCartStore } from "../store/cartStore"
 
 const SIZES = ["S", "M", "L", "XL", "XXL"]
 
-const TDP_THUMBNAILS = [
-  "/images/tdp_thumb_front.jpg",
-  "/images/tdp_thumb_back.jpg",
-  "/images/tdp_thumb_print.jpg",
-  "/images/tdp_thumb_fabric.jpg",
+const TDP_GALLERY = [
+  {
+    full: "/images/tdp_front_hd.jpg",
+    thumb: "/images/tdp_thumb_front.jpg",
+    label: "Front View",
+  },
+  {
+    full: "/images/tdp_back_hd.jpg",
+    thumb: "/images/tdp_thumb_back.jpg",
+    label: "Back View",
+  },
+  {
+    full: "/images/tdp_print_hd.jpg",
+    thumb: "/images/tdp_thumb_print.jpg",
+    label: "Print Detail",
+  },
+  {
+    full: "/images/tdp_fabric_hd.jpg",
+    thumb: "/images/tdp_thumb_fabric.jpg",
+    label: "Fabric Texture",
+  },
 ]
+
+const TDP_COLOR_IMAGES: Record<string, string> = {
+  Yellow: "/images/tdp_front_hd.jpg",
+  White: "/images/tdp_white_hd.jpg",
+  Black: "/images/tdp_black_hd.jpg",
+}
 
 const COLORS = [
   { name: "Yellow", hex: "#f59e0b" },
@@ -57,8 +79,15 @@ export default function ProductDetails() {
     product.name.toLowerCase().includes("dress") ||
     product.name.toLowerCase().includes("t-shirt")
 
-  const galleryImages = isTdp ? TDP_THUMBNAILS : [product.image]
-  const mainImageSrc = isTdp ? galleryImages[activeImageIndex] || product.image : product.image
+  const galleryViews = isTdp
+    ? TDP_GALLERY
+    : [{ full: product.image, thumb: product.image, label: product.name }]
+
+  const mainImageSrc = isTdp
+    ? selectedColor !== "Yellow"
+      ? TDP_COLOR_IMAGES[selectedColor] || TDP_GALLERY[activeImageIndex]?.full || product.image
+      : TDP_GALLERY[activeImageIndex]?.full || product.image
+    : product.image
 
   const originalPrice = isDevara ? 999 : null
   const discountLabel = isDevara ? "40% off" : null
@@ -92,18 +121,24 @@ export default function ProductDetails() {
       <article className="product-detail">
         {/* Left Column: Gallery Thumbnails + Main Showcase Image */}
         <div className="product-detail-gallery-container">
-          {galleryImages.length > 1 && (
+          {galleryViews.length > 1 && (
             <div className="product-gallery-thumbnails" role="tablist" aria-label="Product Image Views">
-              {galleryImages.map((thumbUrl, idx) => (
+              {galleryViews.map((item, idx) => (
                 <button
-                  key={thumbUrl}
+                  key={item.thumb}
                   type="button"
                   role="tab"
                   aria-selected={activeImageIndex === idx}
                   className={`gallery-thumb-btn ${activeImageIndex === idx ? "active" : ""}`}
-                  onClick={() => setActiveImageIndex(idx)}
+                  onClick={() => {
+                    setActiveImageIndex(idx)
+                    if (idx > 0 && selectedColor !== "Yellow") {
+                      setSelectedColor("Yellow")
+                    }
+                  }}
+                  title={item.label}
                 >
-                  <img src={thumbUrl} alt={`${product.name} view ${idx + 1}`} />
+                  <img src={item.thumb} alt={`${product.name} ${item.label}`} />
                 </button>
               ))}
             </div>
@@ -124,9 +159,9 @@ export default function ProductDetails() {
             )}
 
             {/* Pagination indicator dots */}
-            {galleryImages.length > 1 && (
+            {galleryViews.length > 1 && (
               <div className="gallery-indicator-dots" aria-hidden="true">
-                {galleryImages.map((_, idx) => (
+                {galleryViews.map((_, idx) => (
                   <span
                     key={idx}
                     className={`indicator-dot ${activeImageIndex === idx ? "active" : ""}`}
@@ -192,7 +227,10 @@ export default function ProductDetails() {
                     role="radio"
                     aria-checked={selectedColor === col.name}
                     className={`color-swatch-btn ${selectedColor === col.name ? "active" : ""}`}
-                    onClick={() => setSelectedColor(col.name)}
+                    onClick={() => {
+                      setSelectedColor(col.name)
+                      setActiveImageIndex(0)
+                    }}
                     style={{ backgroundColor: col.hex }}
                     title={col.name}
                     aria-label={`Color: ${col.name}`}
