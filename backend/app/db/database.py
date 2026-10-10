@@ -209,6 +209,14 @@ DEFAULT_CATALOG = [
     {"name": "Women's Sneakers", "price": 2199.0, "category": "Shoes", "image": "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=500"},
     {"name": "Women's Handbag", "price": 1899.0, "category": "Bags", "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500"},
     {"name": "Travel Backpack", "price": 1599.0, "category": "Bags", "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500"},
+    {
+        "name": "Devara shirts",
+        "price": 599.0,
+        "category": "Fashion",
+        "image": "/images/devara_white_tshirt.jpg",
+        "description": "Premium white T-shirt featuring a bold Devara-inspired design. Comfortable fabric, stylish look, and perfect for movie fans and casual wear. Printed T-shirt with cinematic warrior print. Original Price: ₹999 (40% off). Sizes: S, M, L, XL, XXL. Color: White.",
+        "stock": 25,
+    },
 ]
 
 

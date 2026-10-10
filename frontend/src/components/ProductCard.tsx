@@ -20,6 +20,7 @@ const ProductCard = memo(function ProductCard({
   const imageSrc = (width: number) => {
     if (!product.image) return ""
     const cleanUrl = product.image.split("?")[0]
+    if (cleanUrl.startsWith("/")) return cleanUrl
     return `${cleanUrl}?auto=format&fit=crop&w=${width}&q=60`
   }
 

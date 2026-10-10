@@ -2795,3 +2795,219 @@ a {
     max-width: 95%;
   }
 }
+
+
+/* ==========================================================================
+   Product Details Page Enhancements (Day 20 Devara & Apparel Features)
+   ========================================================================== */
+
+.product-detail-image-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.product-detail-image {
+  width: 100%;
+  max-height: 560px;
+  object-fit: cover;
+  display: block;
+}
+
+.product-detail-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.product-detail-pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 14px 0 16px;
+}
+
+.product-detail-pricing .product-detail-price {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.product-original-price {
+  font-size: 18px;
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.discount-pill {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.stock-status-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.stock-indicator.in-stock {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.stock-indicator.out-of-stock {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.color-tag {
+  color: var(--muted);
+}
+
+.color-tag strong {
+  color: var(--ink);
+}
+
+.section-subtitle {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.product-size-section {
+  margin-bottom: 22px;
+}
+
+.size-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.selected-size-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.size-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.size-pill-btn {
+  min-width: 44px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.size-pill-btn:hover {
+  border-color: var(--green);
+}
+
+.size-pill-btn.active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.quantity-section {
+  margin-bottom: 22px;
+}
+
+.quantity-controls {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.qty-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qty-value {
+  min-width: 36px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.product-description-block {
+  margin-bottom: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.product-description-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.product-actions-row {
+  margin-top: 24px;
+}
+
+.add-to-cart-cta {
+  width: 100%;
+  max-width: 320px;
+  height: 48px;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
