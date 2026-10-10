@@ -112,10 +112,24 @@ export default function AdminDashboard() {
 
   return (
     <section className="admin-page">
-      <div className="cart-heading">
+      <div className="cart-heading sz-admin-dashboard-header">
         <div>
           <p className="eyebrow">ADMINISTRATION</p>
           <h1>Dashboard<span className="brand-dot">.</span></h1>
+        </div>
+        <div className="sz-admin-profile-card" title={`Admin Profile: ${user.name} (${user.email})`}>
+          <img
+            src={user.avatar || "/images/ntr_admin_avatar.png"}
+            alt="Admin Profile"
+            className="sz-admin-profile-avatar-img"
+          />
+          <div className="sz-admin-profile-meta">
+            <div className="sz-admin-profile-title-row">
+              <span className="sz-admin-profile-name">{user.name}</span>
+              <span className="sz-admin-verified-badge">👑 Administrator</span>
+            </div>
+            <span className="sz-admin-profile-email">{user.email}</span>
+          </div>
         </div>
       </div>
       {error && <p className="form-message error-message" role="alert">{error}</p>}

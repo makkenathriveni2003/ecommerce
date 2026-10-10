@@ -280,6 +280,26 @@ def _seed_initial_data(connection: Any) -> None:
             ("N. Chandrababu Naidu", "cbn@gmail.com", hash_password("cbn12345"), "shopper"),
         )
 
+    ntr_admin_row = connection.execute("SELECT id FROM users WHERE email = 'ntr@shopzone.com'").fetchone()
+    if ntr_admin_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("NTR (Admin)", "ntr@shopzone.com", hash_password("ntr12345"), "admin"),
+        )
+
+    ntr_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'ntr@gmail.com'").fetchone()
+    if ntr_shopper_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("N.T. Rama Rao Jr.", "ntr@gmail.com", hash_password("ntr12345"), "admin"),
+        )
+
 
 def initialize_database() -> None:
     engine = _detect_engine()

@@ -28,10 +28,31 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     }
   }
 
-  const isCbnUser =
+  const isAdmin = user?.role === "admin"
+  const isCbn =
     user?.email === "cbn@shopzone.com" ||
     user?.email === "cbn@gmail.com" ||
     (user?.name && user.name.toLowerCase().includes("chandra"))
+
+  const isNtr =
+    user?.email === "ntr@shopzone.com" ||
+    user?.email === "ntr@gmail.com" ||
+    (user?.name && user.name.toLowerCase().includes("ntr")) ||
+    (isAdmin && !isCbn)
+
+  const heroAvatar = user?.avatar
+    ? user.avatar
+    : isNtr
+      ? "/images/ntr_admin_avatar.png"
+      : "/images/cbn_profile_avatar.png"
+
+  const displayName = user
+    ? user.name
+    : "NTR (Admin)"
+
+  const displayEmail = user
+    ? user.email
+    : "ntr@shopzone.com"
 
   return (
     <div
@@ -54,33 +75,31 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           ✕
         </button>
 
-        {/* Profile Header with CBN Portrait */}
+        {/* Profile Header with Avatar Portrait */}
         <div className="sz-profile-hero">
           <div className="sz-profile-avatar-frame">
             <img
-              src="/images/cbn_profile_avatar.png"
-              alt="N. Chandrababu Naidu"
+              src={heroAvatar}
+              alt={displayName}
               className="sz-profile-large-img"
             />
             <span className="sz-profile-verified-badge" title="Verified Profile">
-              ✓
+              {isAdmin ? "👑" : "✓"}
             </span>
           </div>
 
           <div className="sz-profile-details">
             <h3 className="sz-profile-name">
-              {user ? user.name : "N. Chandrababu Naidu"}
+              {displayName}
             </h3>
             <p className="sz-profile-email">
-              {user ? user.email : "cbn@shopzone.com"}
+              {displayEmail}
             </p>
             <div className="sz-profile-roles">
               <span className="sz-profile-role-tag">
-                {user?.role === "admin"
+                {isAdmin
                   ? "👑 Chief Administrator"
-                  : user?.role === "shopper"
-                    ? "🛍️ Verified Shopper"
-                    : "🌟 Chief Patron"}
+                  : "🛍️ Verified Shopper"}
               </span>
               <span className="sz-profile-active-tag">Active Account</span>
             </div>
@@ -91,6 +110,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         <div className="sz-profile-body">
           <div className="sz-profile-section-title">Quick Profile Switcher</div>
           <div className="sz-profile-switch-grid">
+            <button
+              type="button"
+              className={`sz-profile-switch-btn ${user?.email === "ntr@shopzone.com" ? "active" : ""}`}
+              onClick={() => handleQuickSwitch("ntr@shopzone.com", "ntr12345")}
+            >
+              <img
+                src="/images/ntr_admin_thumb.png"
+                alt="NTR"
+                className="sz-preset-avatar"
+              />
+              <div className="sz-switch-btn-text">
+                <strong>NTR (Admin)</strong>
+                <span>ntr@shopzone.com</span>
+              </div>
+            </button>
+
             <button
               type="button"
               className={`sz-profile-switch-btn ${user?.email === "cbn@shopzone.com" ? "active" : ""}`}

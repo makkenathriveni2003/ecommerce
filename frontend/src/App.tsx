@@ -187,11 +187,16 @@ export default function App() {
                 type="button"
                 className="sz-user-profile-chip-btn"
                 onClick={() => setIsProfileModalOpen(true)}
-                title="View CBN Profile & Account"
+                title="View Profile & Account"
                 aria-label="Open profile modal"
               >
                 <img
-                  src={user.avatar || "/images/cbn_profile_thumb.png"}
+                  src={
+                    user.avatar ||
+                    (user.role === "admin"
+                      ? "/images/ntr_admin_thumb.png"
+                      : "/images/cbn_profile_thumb.png")
+                  }
                   alt={user.name}
                   className="sz-user-avatar-badge"
                 />

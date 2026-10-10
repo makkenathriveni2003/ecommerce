@@ -193,6 +193,22 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
             <>
               <button
                 type="button"
+                className="sz-preset-chip admin-chip ntr-profile-chip"
+                onClick={() => {
+                  setEmail("ntr@shopzone.com")
+                  setPassword("ntr12345")
+                }}
+                title="Click to sign in with NTR Admin profile"
+              >
+                <img
+                  src="/images/ntr_admin_thumb.png"
+                  alt="NTR Admin"
+                  className="sz-preset-avatar"
+                />
+                <span>👑 NTR (ntr@shopzone.com)</span>
+              </button>
+              <button
+                type="button"
                 className="sz-preset-chip admin-chip cbn-profile-chip"
                 onClick={() => {
                   setEmail("cbn@shopzone.com")
