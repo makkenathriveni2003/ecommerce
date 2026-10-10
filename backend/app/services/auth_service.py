@@ -68,6 +68,7 @@ def authenticate_user(email: str, password: str) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_access_token(user["email"], role=user["role"])
+    avatar = "/images/cbn_profile_avatar.png" if "cbn" in user["email"].lower() or "chandra" in user["name"].lower() else None
     return {
         "success": True,
         "message": "Login successful",
@@ -77,5 +78,6 @@ def authenticate_user(email: str, password: str) -> Dict[str, Any]:
             "name": user["name"],
             "email": user["email"],
             "role": user["role"],
+            "avatar": avatar,
         },
     }

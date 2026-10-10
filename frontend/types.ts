@@ -17,6 +17,7 @@ export interface User {
   name: string
   email: string
   role: "shopper" | "admin"
+  avatar?: string
 }
 
 export interface OrderItem {

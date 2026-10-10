@@ -10,6 +10,7 @@ import { useWebSocket } from "./hooks/useWebSocket"
 import { WS_URL } from "./services/apiClient"
 import NotificationsPanel from "./components/NotificationsPanel"
 import LiveChatWidget from "./components/LiveChatWidget"
+import { UserProfileModal } from "./components/UserProfileModal"
 
 const Cart = lazy(() => import("./pages/Cart"))
 const ManageProducts = lazy(() => import("./pages/ManageProducts"))
@@ -29,6 +30,7 @@ function getInitialTheme(): Theme {
 
 export default function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const cartCount = useCartStore((state) =>
     state.cart.reduce((total, item) => total + item.quantity, 0),
   )
@@ -181,11 +183,38 @@ export default function App() {
                   Admin
                 </span>
               )}
-              <span className="account-greeting">Hi, {user.name}</span>
+              <button
+                type="button"
+                className="sz-user-profile-chip-btn"
+                onClick={() => setIsProfileModalOpen(true)}
+                title="View CBN Profile & Account"
+                aria-label="Open profile modal"
+              >
+                <img
+                  src={user.avatar || "/images/cbn_profile_thumb.png"}
+                  alt={user.name}
+                  className="sz-user-avatar-badge"
+                />
+                <span className="account-greeting">Hi, {user.name}</span>
+              </button>
               <button className="text-button" onClick={logout}>Sign out</button>
             </>
           ) : (
             <div className="auth-links" style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+              <button
+                type="button"
+                className="sz-cbn-profile-badge"
+                onClick={() => setIsProfileModalOpen(true)}
+                title="CBN Profile - View profile & sign in"
+                aria-label="CBN Profile"
+              >
+                <img
+                  src="/images/cbn_profile_thumb.png"
+                  alt="CBN Profile"
+                  className="sz-user-avatar-badge"
+                />
+                <span>Profile</span>
+              </button>
               <NavLink className="text-button" to="/manage">Sign in</NavLink>
               <NavLink className="text-button admin-login-btn" to="/admin" style={{ fontWeight: 600 }}>Admin login</NavLink>
             </div>
@@ -215,6 +244,12 @@ export default function App() {
 
       {/* Floating Real-Time Support Chat Widget */}
       <LiveChatWidget wsStatus={wsStatus} sendMessage={sendWsMessage} />
+
+      {/* CBN User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
 
       <footer className="site-footer">
         <span>ShopZone<span className="brand-dot">.</span></span>

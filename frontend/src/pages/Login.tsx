@@ -163,23 +163,59 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
         <div className="sz-preset-strip">
           <span className="sz-preset-label">Active profile:</span>
           {activeRole === "shopper" ? (
-            <button
-              type="button"
-              className="sz-preset-chip"
-              onClick={() => setEmail("thanu@gmail.com")}
-              title="Click to fill Thanu's email"
-            >
-              👤 Thanu (thanu@gmail.com)
-            </button>
+            <>
+              <button
+                type="button"
+                className="sz-preset-chip cbn-profile-chip"
+                onClick={() => {
+                  setEmail("cbn@gmail.com")
+                  setPassword("cbn12345")
+                }}
+                title="Click to sign in with CBN profile"
+              >
+                <img
+                  src="/images/cbn_profile_thumb.png"
+                  alt="CBN"
+                  className="sz-preset-avatar"
+                />
+                <span>🌟 CBN (cbn@gmail.com)</span>
+              </button>
+              <button
+                type="button"
+                className="sz-preset-chip"
+                onClick={() => setEmail("thanu@gmail.com")}
+                title="Click to fill Thanu's email"
+              >
+                👤 Thanu (thanu@gmail.com)
+              </button>
+            </>
           ) : (
-            <button
-              type="button"
-              className="sz-preset-chip admin-chip"
-              onClick={() => setEmail("thriveni@gmail.com")}
-              title="Click to fill Thriveni's email"
-            >
-              👑 Thriveni (thriveni@gmail.com)
-            </button>
+            <>
+              <button
+                type="button"
+                className="sz-preset-chip admin-chip cbn-profile-chip"
+                onClick={() => {
+                  setEmail("cbn@shopzone.com")
+                  setPassword("cbn12345")
+                }}
+                title="Click to sign in with CBN Admin profile"
+              >
+                <img
+                  src="/images/cbn_profile_thumb.png"
+                  alt="CBN"
+                  className="sz-preset-avatar"
+                />
+                <span>👑 CBN (cbn@shopzone.com)</span>
+              </button>
+              <button
+                type="button"
+                className="sz-preset-chip admin-chip"
+                onClick={() => setEmail("thriveni@gmail.com")}
+                title="Click to fill Thriveni's email"
+              >
+                👑 Thriveni (thriveni@gmail.com)
+              </button>
+            </>
           )}
         </div>
 

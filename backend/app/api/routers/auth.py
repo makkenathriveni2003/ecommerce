@@ -23,9 +23,11 @@ def login(request: Request, data: LoginData) -> dict[str, object]:
 
 @router.get("/me")
 def get_me(user: dict[str, Any] = Depends(require_authenticated_user)) -> dict[str, Any]:
+    avatar = "/images/cbn_profile_avatar.png" if "cbn" in user["email"].lower() or "chandra" in user["name"].lower() else None
     return {
         "id": user["id"],
         "name": user["name"],
         "email": user["email"],
         "role": user["role"],
+        "avatar": avatar,
     }

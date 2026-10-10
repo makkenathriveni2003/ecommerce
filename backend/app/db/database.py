@@ -260,6 +260,26 @@ def _seed_initial_data(connection: Any) -> None:
             ("Admin User", "admin@example.com", hash_password("adminpassword123"), "admin"),
         )
 
+    cbn_admin_row = connection.execute("SELECT id FROM users WHERE email = 'cbn@shopzone.com'").fetchone()
+    if cbn_admin_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("N. Chandrababu Naidu", "cbn@shopzone.com", hash_password("cbn12345"), "admin"),
+        )
+
+    cbn_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'cbn@gmail.com'").fetchone()
+    if cbn_shopper_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("N. Chandrababu Naidu", "cbn@gmail.com", hash_password("cbn12345"), "shopper"),
+        )
+
 
 def initialize_database() -> None:
     engine = _detect_engine()
