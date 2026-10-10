@@ -35,6 +35,29 @@ const TDP_COLOR_IMAGES: Record<string, string> = {
   Black: "/images/tdp_black_hd.jpg",
 }
 
+const CBN_GALLERY = [
+  {
+    full: "/images/cbn_front_hd.jpg",
+    thumb: "/images/cbn_thumb_front.jpg",
+    label: "Front View",
+  },
+  {
+    full: "/images/cbn_back_hd.jpg",
+    thumb: "/images/cbn_thumb_back.jpg",
+    label: "Back View",
+  },
+  {
+    full: "/images/cbn_print_hd.jpg",
+    thumb: "/images/cbn_thumb_print.jpg",
+    label: "Print Detail",
+  },
+  {
+    full: "/images/cbn_fabric_hd.jpg",
+    thumb: "/images/cbn_thumb_fabric.jpg",
+    label: "Fabric Texture",
+  },
+]
+
 const COLORS = [
   { name: "Yellow", hex: "#f59e0b" },
   { name: "White", hex: "#ffffff" },
@@ -72,6 +95,9 @@ export default function ProductDetails() {
 
   const product = productQuery.data
   const isTdp = product.name.toLowerCase().includes("tdp")
+  const isCbn =
+    product.name.toLowerCase().includes("chandra babu") ||
+    product.name.toLowerCase().includes("cbn")
   const isDevara = product.name.toLowerCase().includes("devara")
   const isApparel =
     product.category.toLowerCase().includes("fashion") ||
@@ -79,18 +105,28 @@ export default function ProductDetails() {
     product.name.toLowerCase().includes("dress") ||
     product.name.toLowerCase().includes("t-shirt")
 
+  const availableColors = isCbn || isDevara
+    ? [{ name: "White", hex: "#ffffff" }]
+    : COLORS
+
+  const currentColor = isCbn || isDevara ? "White" : selectedColor
+
   const galleryViews = isTdp
     ? TDP_GALLERY
+    : isCbn
+    ? CBN_GALLERY
     : [{ full: product.image, thumb: product.image, label: product.name }]
 
   const mainImageSrc = isTdp
-    ? selectedColor !== "Yellow"
-      ? TDP_COLOR_IMAGES[selectedColor] || TDP_GALLERY[activeImageIndex]?.full || product.image
+    ? currentColor !== "Yellow"
+      ? TDP_COLOR_IMAGES[currentColor] || TDP_GALLERY[activeImageIndex]?.full || product.image
       : TDP_GALLERY[activeImageIndex]?.full || product.image
+    : isCbn
+    ? CBN_GALLERY[activeImageIndex]?.full || product.image
     : product.image
 
-  const originalPrice = isDevara ? 999 : null
-  const discountLabel = isDevara ? "40% off" : null
+  const originalPrice = isDevara || isCbn ? 999 : null
+  const discountLabel = isDevara || isCbn ? "40% off" : null
   const stockCount = typeof product.stock === "number" ? product.stock : 50
   const isOutOfStock = stockCount <= 0
 
@@ -220,13 +256,13 @@ export default function ProductDetails() {
             <div className="product-swatches-section">
               <span className="section-label">Color</span>
               <div className="color-swatches-row" role="radiogroup" aria-label="Select Color">
-                {COLORS.map((col) => (
+                {availableColors.map((col) => (
                   <button
                     key={col.name}
                     type="button"
                     role="radio"
-                    aria-checked={selectedColor === col.name}
-                    className={`color-swatch-btn ${selectedColor === col.name ? "active" : ""}`}
+                    aria-checked={currentColor === col.name}
+                    className={`color-swatch-btn ${currentColor === col.name ? "active" : ""}`}
                     onClick={() => {
                       setSelectedColor(col.name)
                       setActiveImageIndex(0)

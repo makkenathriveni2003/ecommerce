@@ -225,6 +225,14 @@ DEFAULT_CATALOG = [
         "description": "Show your support with this premium TDP logo t-shirt. Made from soft, breathable cotton for all-day comfort. Perfect for rallies, events or casual wear. 100% Cotton (Bio Wash), High Quality Fade Resistant Digital Print, Regular Fit. Colors: Yellow, White, Black. Sizes: S, M, L, XL, XXL.",
         "stock": 50,
     },
+    {
+        "name": "Chandra Babu Printed White T-Shirt",
+        "price": 599.0,
+        "category": "Fashion",
+        "image": "/images/cbn_front_hd.jpg",
+        "description": "Premium white graphic T-shirt featuring a high-definition bold full-chest front print of visionary leader N. Chandrababu Naidu. Crafted from 100% bio-wash combed cotton for ultimate comfort and durability. Regular fit, fade-resistant digital screen print. Original Price: ₹999 (40% off). Colors: White. Sizes: S, M, L, XL, XXL.",
+        "stock": 50,
+    },
 ]
 
 
