@@ -35,7 +35,10 @@ else:
 
 
 _ENGINE: str | None = None
-_SQLITE_PATH = settings.BASE_DIR / "ecommerce.db"
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    _SQLITE_PATH = Path("/tmp/ecommerce.db")
+else:
+    _SQLITE_PATH = settings.BASE_DIR / "ecommerce.db"
 
 
 def _detect_engine() -> str:
@@ -53,6 +56,11 @@ def _detect_engine() -> str:
     if forced:
         raise ValueError("DATABASE_ENGINE must be set to 'postgres' or 'sqlite'.")
 
+    # If running on Vercel without a configured remote PGHOST, default to sqlite
+    if os.environ.get("VERCEL") and (not os.environ.get("PGHOST") or os.environ.get("PGHOST") == "localhost"):
+        _ENGINE = "sqlite"
+        return _ENGINE
+
     if HAS_PSYCOPG:
         try:
             with psycopg.connect(
@@ -66,10 +74,17 @@ def _detect_engine() -> str:
                 _ENGINE = "postgres"
                 return _ENGINE
         except psycopg.Error as error:
+            if os.environ.get("VERCEL"):
+                _ENGINE = "sqlite"
+                return _ENGINE
             raise RuntimeError(
                 "PostgreSQL is unavailable. Start PostgreSQL or explicitly set "
                 "DATABASE_ENGINE=sqlite for local development."
             ) from error
+
+    if os.environ.get("VERCEL"):
+        _ENGINE = "sqlite"
+        return _ENGINE
 
     raise RuntimeError(
         "PostgreSQL support is not installed. Install backend requirements "
