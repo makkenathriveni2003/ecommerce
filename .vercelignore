@@ -1,0 +1,43 @@
+# Git and IDE
+.git
+.github
+.vscode
+.idea
+
+# Python virtual environments & bytecode
+venv/
+.venv/
+env/
+backend/venv/
+backend/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Node dependencies
+node_modules/
+**/node_modules/
+dist/
+.dist/
+
+# Local databases and Docker state
+chroma_data/
+backend/chroma_data/
+*.db
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Other day-specific local/docker configs
+tests/
+day23/
+day24/
+docs/
+docker-compose*.yml
+Dockerfile*
