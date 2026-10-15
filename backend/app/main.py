@@ -135,7 +135,7 @@ async def custom_general_exception_handler(request: Request, exc: Exception):
     )
 
 
-# 6. Register Subrouters
+# 6. Register Subrouters (Direct and /api prefixed for unified Vercel multi-service routing)
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(orders.router)
@@ -143,8 +143,16 @@ app.include_router(admin.router)
 app.include_router(tasks.router)
 app.include_router(chat.router)
 app.include_router(websocket.router)
-app.include_router(ai.router, prefix="/api")
 app.include_router(ai.router)
+
+# Prefix aliases for single-domain routing
+app.include_router(auth.router, prefix="/api")
+app.include_router(products.router, prefix="/api")
+app.include_router(orders.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(tasks.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 
 
 @app.get("/")
