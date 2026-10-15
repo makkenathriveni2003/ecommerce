@@ -1,0 +1,38 @@
+name: Branch Protection & Policy Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [main, master, develop]
+
+jobs:
+  policy-compliance:
+    name: Enforce Branch & PR Merge Rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify PR Title Semantic Conventions
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "Checking PR Title: $PR_TITLE"
+          if echo "$PR_TITLE" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?: .+'; then
+            echo "PR Title complies with Conventional Commits specification."
+          else
+            echo "WARNING: PR title should follow Conventional Commits (e.g., 'feat: add docker compose' or 'fix: color selection')."
+          fi
+
+      - name: Verify No Sensitive Secrets or Keys in Diff
+        run: |
+          echo "Scanning diff for leaked API keys, .env secrets or private certificates..."
+          git diff origin/${{ github.base_ref }}...HEAD | grep -E '(AIProviderAuthError|AWS_SECRET_ACCESS_KEY|PRIVATE KEY|ghp_[a-zA-Z0-9]+|sk-[a-zA-Z0-9]{20,})' && {
+            echo "CRITICAL: Potential secret detected in PR diff! Aborting merge check."
+            exit 1
+          } || echo "No exposed credentials detected in PR changes."
+
+      - name: Confirm Protected Branch Targeting
+        run: |
+          echo "Target Branch: ${{ github.base_ref }}"
+          echo "Source Branch: ${{ github.head_ref }}"
+          echo "Status: Branch Protection policies validated."

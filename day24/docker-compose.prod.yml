@@ -1,0 +1,223 @@
+# ==============================================================================
+# ShopZone Day 24 - AWS EC2 Production Docker Compose Stack
+# Multi-container orchestration: FastAPI backend, Celery workers, PostgreSQL,
+# Redis, ChromaDB, and Nginx reverse proxy with automated SSL volume mapping.
+# ==============================================================================
+
+name: shopzone-prod
+
+networks:
+  shopzone-prod-network:
+    driver: bridge
+    name: shopzone-prod-network
+
+volumes:
+  postgres_prod_data:
+    name: shopzone_postgres_prod_data
+  redis_prod_data:
+    name: shopzone_redis_prod_data
+  chroma_prod_data:
+    name: shopzone_chroma_prod_data
+  app_prod_logs:
+    name: shopzone_app_prod_logs
+  certbot_conf:
+    name: shopzone_certbot_conf
+  certbot_www:
+    name: shopzone_certbot_www
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL 16 Relational Database
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopzone-prod-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shopzone_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-shopzone_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - shopzone-prod-network
+    # In production, DB port is NOT mapped to host; accessible only within Docker network
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-shopzone_admin} -d $${POSTGRES_DB:-shopzone_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # 2. Redis 7 Caching & Message Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: shopzone-prod-redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-prodsecret}"]
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - shopzone-prod-network
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-prodsecret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # ----------------------------------------------------------------------------
+  # 3. ChromaDB Vector Database
+  # ----------------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: shopzone-prod-chromadb
+    restart: always
+    volumes:
+      - chroma_prod_data:/chroma/chroma
+    networks:
+      - shopzone-prod-network
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    expose:
+      - "8000"
+
+  # ----------------------------------------------------------------------------
+  # 4. FastAPI Application Backend
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:latest
+    container_name: shopzone-prod-backend
+    restart: always
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_ENGINE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopzone_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-shopzone_production}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-shopzone_production}
+      PGUSER: ${POSTGRES_USER:-shopzone_admin}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CHROMA_PERSIST_DIRECTORY: /app/data/chroma_db
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    volumes:
+      - app_prod_logs:/app/logs
+    networks:
+      - shopzone-prod-network
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # 5. Celery Asynchronous Background Worker
+  # ----------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:latest
+    container_name: shopzone-prod-celery-worker
+    restart: always
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "worker", "--loglevel=info", "-c", "2"]
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_ENGINE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopzone_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-shopzone_production}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-shopzone_production}
+      PGUSER: ${POSTGRES_USER:-shopzone_admin}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+    volumes:
+      - app_prod_logs:/app/logs
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 6. Celery Beat Periodic Scheduler
+  # ----------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:latest
+    container_name: shopzone-prod-celery-beat
+    restart: always
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "beat", "--loglevel=info"]
+    env_file:
+      - .env.example
+    environment:
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+    volumes:
+      - app_prod_logs:/app/logs
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 7. Nginx Production Reverse Proxy (Ports 80 & 443)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: shopzone-prod-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

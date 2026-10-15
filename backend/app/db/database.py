@@ -210,44 +210,94 @@ DEFAULT_CATALOG = [
     {"name": "Women's Handbag", "price": 1899.0, "category": "Bags", "image": "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=500"},
     {"name": "Travel Backpack", "price": 1599.0, "category": "Bags", "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500"},
     {
-        "name": "Devara shirts",
-        "price": 599.0,
-        "category": "Fashion",
-        "image": "/images/devara_white_tshirt.jpg",
-        "description": "Premium white T-shirt featuring a bold Devara-inspired design. Comfortable fabric, stylish look, and perfect for movie fans and casual wear. Printed T-shirt with cinematic warrior print. Original Price: ₹999 (40% off). Sizes: S, M, L, XL, XXL. Color: White.",
-        "stock": 25,
-    },
-    {
-        "name": "TDP Logo T-Shirt",
+        "name": "Ganzee Classic Ribbed Cotton Vest (Pack of 3)",
         "price": 499.0,
         "category": "Fashion",
-        "image": "/images/tdp_logo_tshirt.jpg",
-        "description": "Show your support with this premium TDP logo t-shirt. Made from soft, breathable cotton for all-day comfort. Perfect for rallies, events or casual wear. 100% Cotton (Bio Wash), High Quality Fade Resistant Digital Print, Regular Fit. Colors: Yellow, White, Black. Sizes: S, M, L, XL, XXL.",
-        "stock": 50,
+        "image": "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500",
+        "description": "100% combed breathable ribbed cotton ganzee vests. Sweat-wicking, contour body fit, durable reinforced armholes, ideal for daily undershirt or gym workouts.",
+        "stock": 120,
     },
     {
-        "name": "Chandra Babu Printed White T-Shirt",
+        "name": "Ganzee Pro Gym Stringer & Muscle Tank",
         "price": 599.0,
         "category": "Fashion",
-        "image": "/images/cbn_front_hd.jpg",
-        "description": "Premium white graphic T-shirt featuring a high-definition bold full-chest front print of visionary leader N. Chandrababu Naidu. Crafted from 100% bio-wash combed cotton for ultimate comfort and durability. Regular fit, fade-resistant digital screen print. Original Price: ₹999 (40% off). Colors: White. Sizes: S, M, L, XL, XXL.",
-        "stock": 50,
+        "image": "https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=500",
+        "description": "Athletic drop-cut gym stringer ganzee. Features deep armholes for maximum range of motion during chest and back workouts, quick-dry 4-way stretch fabric.",
+        "stock": 85,
+    },
+    {
+        "name": "Ganzee Supima Silk-Touch Seamless Sleeveless Tee",
+        "price": 649.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=500",
+        "description": "Ultra-luxurious Supima cotton sleeveless ganzee. Featherweight feel, anti-chafing flatlock seams, tagless neckline for elite all-day comfort.",
+        "stock": 95,
+    },
+    {
+        "name": "Ganzee Athleisure Sleeveless Training Hoodie",
+        "price": 899.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500",
+        "description": "Urban streetwear sleeveless hooded ganzee. Designed with drawstring hood, kangaroo front pouch, and drop armholes for modern street and gym style.",
+        "stock": 60,
+    },
+    {
+        "name": "Ganzee Summer Breeze Relaxed Linen Tank Top",
+        "price": 799.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500",
+        "description": "Breathable linen-cotton blended summer ganzee tank. Relaxed casual drape, airy weave perfect for beach, vacation, and hot tropical summers.",
+        "stock": 75,
+    },
+    {
+        "name": "Ganzee Dry-Fit Compression Torso Vest",
+        "price": 749.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500",
+        "description": "High-performance compression training ganzee. Provides targeted abdominal and chest support, boosts blood circulation, and controls moisture during intense cardio.",
+        "stock": 110,
+    },
+    {
+        "name": "Ganzee Vintage Acid-Wash Graphic Muscle Tee",
+        "price": 699.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500",
+        "description": "Trendsetting vintage washed sleeveless ganzee tee with raw cut edges and bold streetwear screen print. Relaxed oversized silhouette.",
+        "stock": 80,
+    },
+    {
+        "name": "Ganzee MicroModal Ultra-Soft Lounge Undershirt",
+        "price": 549.0,
+        "category": "Fashion",
+        "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500",
+        "description": "Premium sustainable modal ganjee undershirt. 2x softer than standard cotton, temperature-regulating, silky smooth against the skin for relaxed evenings.",
+        "stock": 100,
     },
 ]
 
 
 def _seed_initial_data(connection: Any) -> None:
-    product_rows = connection.execute("SELECT COUNT(*) AS count FROM products").fetchone()
-    count = product_rows["count"] if product_rows else 0
-    if count == 0:
-        for p in DEFAULT_CATALOG:
-            connection.execute(
-                """
-                INSERT INTO products (name, price, category, image)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (p["name"], p["price"], p["category"], p["image"]),
-            )
+    # Ensure all products in DEFAULT_CATALOG (including trending Ganzee items) exist
+    for p in DEFAULT_CATALOG:
+        try:
+            existing_p = connection.execute("SELECT id FROM products WHERE name = %s", (p["name"],)).fetchone()
+            if existing_p is None:
+                connection.execute(
+                    """
+                    INSERT INTO products (name, price, category, image, description, stock)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        p["name"],
+                        p["price"],
+                        p["category"],
+                        p["image"],
+                        p.get("description", ""),
+                        p.get("stock", 50),
+                    ),
+                )
+        except Exception:
+            pass
 
     from ..core.security import hash_password
     admin_row = connection.execute("SELECT id FROM users WHERE email = 'admin@example.com'").fetchone()
@@ -260,44 +310,84 @@ def _seed_initial_data(connection: Any) -> None:
             ("Admin User", "admin@example.com", hash_password("adminpassword123"), "admin"),
         )
 
-    cbn_admin_row = connection.execute("SELECT id FROM users WHERE email = 'cbn@shopzone.com'").fetchone()
-    if cbn_admin_row is None:
+    cz_admin_row = connection.execute("SELECT id FROM users WHERE email = 'admin@chowzoon.com'").fetchone()
+    if cz_admin_row is None:
         connection.execute(
             """
             INSERT INTO users (name, email, password_hash, role)
             VALUES (%s, %s, %s, %s)
             """,
-            ("N. Chandrababu Naidu", "cbn@shopzone.com", hash_password("cbn12345"), "admin"),
+            ("Ganzee Zoon Administrator", "admin@chowzoon.com", hash_password("adminpassword123"), "admin"),
         )
 
-    cbn_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'cbn@gmail.com'").fetchone()
-    if cbn_shopper_row is None:
+    cz_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'customer@chowzoon.com'").fetchone()
+    if cz_shopper_row is None:
         connection.execute(
             """
             INSERT INTO users (name, email, password_hash, role)
             VALUES (%s, %s, %s, %s)
             """,
-            ("N. Chandrababu Naidu", "cbn@gmail.com", hash_password("cbn12345"), "shopper"),
+            ("Valued Shopper", "customer@chowzoon.com", hash_password("customer12345"), "shopper"),
         )
 
-    ntr_admin_row = connection.execute("SELECT id FROM users WHERE email = 'ntr@shopzone.com'").fetchone()
-    if ntr_admin_row is None:
+    sb_admin_row = connection.execute("SELECT id FROM users WHERE email = 'admin@smartbazaar.com'").fetchone()
+    if sb_admin_row is None:
         connection.execute(
             """
             INSERT INTO users (name, email, password_hash, role)
             VALUES (%s, %s, %s, %s)
             """,
-            ("NTR (Admin)", "ntr@shopzone.com", hash_password("ntr12345"), "admin"),
+            ("Ganzee Zoon Administrator", "admin@smartbazaar.com", hash_password("adminpassword123"), "admin"),
         )
 
-    ntr_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'ntr@gmail.com'").fetchone()
-    if ntr_shopper_row is None:
+    sb_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'customer@smartbazaar.com'").fetchone()
+    if sb_shopper_row is None:
         connection.execute(
             """
             INSERT INTO users (name, email, password_hash, role)
             VALUES (%s, %s, %s, %s)
             """,
-            ("N.T. Rama Rao Jr.", "ntr@gmail.com", hash_password("ntr12345"), "admin"),
+            ("Valued Shopper", "customer@smartbazaar.com", hash_password("customer12345"), "shopper"),
+        )
+
+    gz_admin_row = connection.execute("SELECT id FROM users WHERE email = 'admin@ganzeezoon.com'").fetchone()
+    if gz_admin_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("Ganzee Zoon Administrator", "admin@ganzeezoon.com", hash_password("adminpassword123"), "admin"),
+        )
+
+    gz_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'customer@ganzeezoon.com'").fetchone()
+    if gz_shopper_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("Valued Shopper", "customer@ganzeezoon.com", hash_password("customer12345"), "shopper"),
+        )
+
+    genz_admin_row = connection.execute("SELECT id FROM users WHERE email = 'admin@genzzone.com'").fetchone()
+    if genz_admin_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("GenZ Zone Administrator", "admin@genzzone.com", hash_password("adminpassword123"), "admin"),
+        )
+
+    genz_shopper_row = connection.execute("SELECT id FROM users WHERE email = 'customer@genzzone.com'").fetchone()
+    if genz_shopper_row is None:
+        connection.execute(
+            """
+            INSERT INTO users (name, email, password_hash, role)
+            VALUES (%s, %s, %s, %s)
+            """,
+            ("GenZ Shopper", "customer@genzzone.com", hash_password("customer12345"), "shopper"),
         )
 
 

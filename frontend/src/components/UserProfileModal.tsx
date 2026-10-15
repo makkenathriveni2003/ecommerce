@@ -2,6 +2,7 @@ import React from "react"
 import { Link } from "react-router-dom"
 import { useAuthStore } from "../store/authStore"
 import { loginAccount } from "../services/authService"
+import { GenZLogo } from "./GenZLogo"
 
 interface UserProfileModalProps {
   isOpen: boolean
@@ -29,30 +30,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   }
 
   const isAdmin = user?.role === "admin"
-  const isCbn =
-    user?.email === "cbn@shopzone.com" ||
-    user?.email === "cbn@gmail.com" ||
-    (user?.name && user.name.toLowerCase().includes("chandra"))
-
-  const isNtr =
-    user?.email === "ntr@shopzone.com" ||
-    user?.email === "ntr@gmail.com" ||
-    (user?.name && user.name.toLowerCase().includes("ntr")) ||
-    (isAdmin && !isCbn)
 
   const heroAvatar = user?.avatar
     ? user.avatar
-    : isNtr
-      ? "/images/ntr_admin_avatar.png"
-      : "/images/cbn_profile_avatar.png"
+    : isAdmin
+      ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+      : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150"
 
   const displayName = user
     ? user.name
-    : "NTR (Admin)"
+    : "GenZ Zone Guest"
 
   const displayEmail = user
     ? user.email
-    : "ntr@shopzone.com"
+    : "guest@genzzone.com"
 
   return (
     <div
@@ -112,49 +103,39 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <div className="sz-profile-switch-grid">
             <button
               type="button"
-              className={`sz-profile-switch-btn ${user?.email === "ntr@shopzone.com" ? "active" : ""}`}
-              onClick={() => handleQuickSwitch("ntr@shopzone.com", "ntr12345")}
+              className={`sz-profile-switch-btn ${user?.email === "admin@genzzone.com" ? "active" : ""}`}
+              onClick={() => handleQuickSwitch("admin@genzzone.com", "adminpassword123")}
             >
-              <img
-                src="/images/ntr_admin_thumb.png"
-                alt="NTR"
-                className="sz-preset-avatar"
-              />
+              <GenZLogo size={36} />
               <div className="sz-switch-btn-text">
-                <strong>NTR (Admin)</strong>
-                <span>ntr@shopzone.com</span>
+                <strong>Admin (GenZ Zone)</strong>
+                <span>admin@genzzone.com</span>
               </div>
             </button>
 
             <button
               type="button"
-              className={`sz-profile-switch-btn ${user?.email === "cbn@shopzone.com" ? "active" : ""}`}
-              onClick={() => handleQuickSwitch("cbn@shopzone.com", "cbn12345")}
+              className={`sz-profile-switch-btn ${user?.email === "customer@genzzone.com" ? "active" : ""}`}
+              onClick={() => handleQuickSwitch("customer@genzzone.com", "customer12345")}
             >
-              <img
-                src="/images/cbn_profile_thumb.png"
-                alt="CBN"
-                className="sz-preset-avatar"
-              />
+              <GenZLogo size={36} />
               <div className="sz-switch-btn-text">
-                <strong>CBN (Admin)</strong>
-                <span>cbn@shopzone.com</span>
+                <strong>Customer (GenZ Zone)</strong>
+                <span>customer@genzzone.com</span>
               </div>
             </button>
 
             <button
               type="button"
-              className={`sz-profile-switch-btn ${user?.email === "cbn@gmail.com" ? "active" : ""}`}
-              onClick={() => handleQuickSwitch("cbn@gmail.com", "cbn12345")}
+              className={`sz-profile-switch-btn ${user?.email === "thriveni@gmail.com" ? "active" : ""}`}
+              onClick={() => handleQuickSwitch("thriveni@gmail.com", "Thanu@123")}
             >
-              <img
-                src="/images/cbn_profile_thumb.png"
-                alt="CBN"
-                className="sz-preset-avatar"
-              />
+              <div className="sz-avatar-circle" style={{ width: 36, height: 36, borderRadius: "50%", background: "#7c3aed", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
+                TM
+              </div>
               <div className="sz-switch-btn-text">
-                <strong>CBN (Customer)</strong>
-                <span>cbn@gmail.com</span>
+                <strong>Thriveni (Admin)</strong>
+                <span>thriveni@gmail.com</span>
               </div>
             </button>
           </div>
@@ -163,25 +144,36 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <div className="sz-profile-section-title">Personalized Shortcuts</div>
           <div className="sz-profile-links-list">
             <Link
-              to="/products/76"
+              to="/"
               className="sz-profile-link-item"
               onClick={onClose}
             >
-              <span className="sz-link-icon">👕</span>
+              <span className="sz-link-icon">🛍️</span>
               <div>
-                <strong>Chandra Babu Printed White T-Shirt</strong>
-                <span>View signature full-chest graphic tee</span>
+                <strong>Explore Products & Deals</strong>
+                <span>Discover curated essentials with live offers</span>
               </div>
             </Link>
             <Link
-              to="/products/74"
+              to="/favorites"
               className="sz-profile-link-item"
               onClick={onClose}
             >
-              <span className="sz-link-icon">🚜</span>
+              <span className="sz-link-icon" style={{ color: "#e11d48" }}>♥</span>
               <div>
-                <strong>TDP Official Logo T-Shirt</strong>
-                <span>View signature yellow rally t-shirt</span>
+                <strong>My Saved Favorites (Wishlist)</strong>
+                <span>Items stored persistently in browser storage</span>
+              </div>
+            </Link>
+            <Link
+              to="/ai-assistant"
+              className="sz-profile-link-item"
+              onClick={onClose}
+            >
+              <span className="sz-link-icon">🤖</span>
+              <div>
+                <strong>GenZ Zone AI Assistant</strong>
+                <span>RAG-powered conversational shopping guide</span>
               </div>
             </Link>
             {user && (
@@ -192,8 +184,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               >
                 <span className="sz-link-icon">📦</span>
                 <div>
-                  <strong>Order History</strong>
-                  <span>Track recent purchases and invoices</span>
+                  <strong>Order History & Live Tracking</strong>
+                  <span>Real-time status updates via WebSockets</span>
                 </div>
               </Link>
             )}
@@ -206,7 +198,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <span className="sz-link-icon">⚙️</span>
                 <div>
                   <strong>Admin Operations Dashboard</strong>
-                  <span>Manage catalogue, orders & inventory</span>
+                  <span>Manage catalogue, inventory & order dispatch</span>
                 </div>
               </Link>
             )}

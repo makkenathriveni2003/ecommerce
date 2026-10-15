@@ -23,6 +23,10 @@ export const handlers = [
     return HttpResponse.json(testProducts.slice(skip, skip + limit))
   }),
 
+  http.get("*/products/:productId/similar", () => {
+    return HttpResponse.json(testProducts.slice(1, 5))
+  }),
+
   http.get("*/products/:productId", ({ params }) => {
     const product = testProducts.find(
       (item) => item.id === Number(params.productId),

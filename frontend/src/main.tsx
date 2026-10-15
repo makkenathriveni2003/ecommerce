@@ -3,10 +3,12 @@ import { createRoot } from "react-dom/client"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { BrowserRouter } from "react-router-dom"
 import { queryClient } from "./utils/queryClient"
+import { initFrontendSentry } from "./utils/sentry"
 import App from "./App"
 import "./index.css"
 
 async function startApp() {
+  initFrontendSentry()
 
   const rootElement = document.getElementById("root")
 

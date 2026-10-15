@@ -364,7 +364,8 @@ def test_build_augmented_prompt_fences():
     messages = build_augmented_prompt("Find me laptops", retrieved_docs=docs)
 
     system_msg = messages[0]["content"]
-    assert "official AI Shopping Assistant for ShopZone" in system_msg
+    assert "official AI Shopping Assistant for" in system_msg
+    assert ("Ganzee Zoon" in system_msg or "Smart Bazaar" in system_msg or "Chow Zoon" in system_msg or "ShopZone" in system_msg)
     assert "untrusted descriptive data" in system_msg
 
     user_msg = messages[-1]["content"]

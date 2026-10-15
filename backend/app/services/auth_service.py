@@ -71,12 +71,11 @@ def authenticate_user(email: str, password: str) -> Dict[str, Any]:
     email_l = str(user["email"]).lower()
     name_l = str(user["name"]).lower()
     role_l = str(user["role"]).lower()
-    if "ntr" in email_l or "ntr" in name_l or (role_l == "admin" and "cbn" not in email_l and "chandra" not in name_l):
-        avatar = "/images/ntr_admin_avatar.png"
-    elif "cbn" in email_l or "chandra" in name_l:
-        avatar = "/images/cbn_profile_avatar.png"
+    if role_l == "admin":
+        avatar = "/images/admin_avatar.png"
     else:
-        avatar = None
+        avatar = "/images/customer_avatar.png"
+
 
     return {
         "success": True,

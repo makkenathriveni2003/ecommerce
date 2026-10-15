@@ -175,3 +175,40 @@ export async function streamAIChat(options: StreamChatOptions): Promise<void> {
     reader.releaseLock()
   }
 }
+
+export interface AIDescriptionResult {
+  name: string
+  category: string
+  description: string
+  bullet_points: string[]
+  provider: string
+  model: string
+  cached: boolean
+}
+
+/**
+ * Generate Amazon-standard e-commerce product description via AI.
+ */
+export async function generateAIDescription(params: {
+  name: string
+  category: string
+  price?: number
+  keywords?: string[]
+  tone?: string
+}): Promise<AIDescriptionResult> {
+  const response = await fetch(`${API_URL}/api/ai/generate-description`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!response.ok) {
+    const errorData = (await response.json().catch(() => ({}))) as { detail?: string }
+    throw new Error(errorData.detail || `AI Description generation failed (HTTP ${response.status})`)
+  }
+
+  return response.json()
+}
+

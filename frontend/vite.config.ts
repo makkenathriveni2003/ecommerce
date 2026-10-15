@@ -1,22 +1,24 @@
 import react from "@vitejs/plugin-react"
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
 import { defineConfig } from "vitest/config"
 
 function inlineStylesheet() {
-  let root = ""
-
   return {
     name: "inline-production-stylesheet",
     apply: "build" as const,
-    configResolved(config: { root: string }) {
-      root = config.root
-    },
+    enforce: "post" as const,
     transformIndexHtml: {
-      order: "pre" as const,
-      handler(html: string) {
-        const css = readFileSync(join(root, "src", "index.css"), "utf8")
-        return html.replace("</head>", `<style>${css}</style></head>`)
+      order: "post" as const,
+      handler(html: string, ctx: { bundle?: Record<string, { type: string; source?: string | Uint8Array }> }) {
+        if (!ctx.bundle) return html
+        let minifiedCss = ""
+        for (const [fileName, asset] of Object.entries(ctx.bundle)) {
+          if (fileName.endsWith(".css") && asset.source) {
+            minifiedCss += asset.source.toString()
+          }
+        }
+        if (!minifiedCss) return html
+        const withoutCssLink = html.replace(/<link rel="stylesheet"[^>]+href="[^"]+\.css"[^>]*>/g, "")
+        return withoutCssLink.replace("</head>", `<style>${minifiedCss}</style></head>`)
       },
     },
   }

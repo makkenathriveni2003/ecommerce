@@ -1,0 +1,58 @@
+# ============================================================================
+# .dockerignore - Prevent unnecessary host files from bloating container context
+# ============================================================================
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python byte-code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node & Frontend dependencies and test outputs
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+playwright-report/
+test-results/
+
+# Local databases and temporary uploads
+*.sqlite3
+*.db
+backend/data/*.db
+backend/data/sqlight.db
+uploads/*
+!uploads/.gitkeep
+redis/
+redis-server.exe
+redis.windows.conf
+
+# IDE and OS artifacts
+.git/
+.gitignore
+.gemini/
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Documentation and scratch test logs
+scratch/
+scratch_presets/
+tests_day18/
+loadtests/
+*.log

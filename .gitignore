@@ -10,11 +10,33 @@ backend/uvicorn*.log
 backend/temp_uploads/
 backend/generated_invoices/
 dump.rdb
+*.bak
+*.bak*
+*.bak_day24
 
-# Secrets
+# Secrets & Sensitive Environment Files
 backend/.env
 frontend/.env
 *.env.local
+day24/.env
+.env.production
+*.env*.local
+
+# Certificates, Keys & Cloud Credentials
+*.pem
+*.key
+*.crt
+*.cert
+*.csr
+*.pfx
+*.p12
+*.id_rsa
+id_rsa*
+.aws/
+credentials
+.sentryclirc
+*.tfstate
+*.tfstate.backup
 
 # Vector database
 chroma_db/

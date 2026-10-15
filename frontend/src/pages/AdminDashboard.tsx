@@ -9,11 +9,12 @@ import {
   type NewProduct,
 } from "../services/productService"
 import { getAdminOrders, updateOrderStatus } from "../services/orderService"
+import { generateAIDescription } from "../services/aiService"
 import Login from "./Login"
 import { useAuthStore } from "../store/authStore"
 import { BulkCsvImport } from "../components/BulkCsvImport"
 
-const emptyProduct: NewProduct = { name: "", price: 0, category: "", image: "" }
+const emptyProduct: NewProduct = { name: "", price: 0, category: "", image: "", description: "", stock: 50 }
 const orderStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
 
 export default function AdminDashboard() {
@@ -24,6 +25,7 @@ export default function AdminDashboard() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isGeneratingDesc, setIsGeneratingDesc] = useState(false)
 
   const productsQuery = useQuery({
     queryKey: ["admin", "products"],
@@ -98,9 +100,34 @@ export default function AdminDashboard() {
       price: product.price,
       category: product.category,
       image: product.image,
+      description: product.description || "",
+      stock: product.stock ?? 50,
     })
     setError(null)
     setNotice(null)
+  }
+
+  async function handleAiGenerateDescription() {
+    if (!form.name.trim() || !form.category.trim()) {
+      setError("Please enter product name and category first so the AI copywriter has context.")
+      return
+    }
+    setError(null)
+    setIsGeneratingDesc(true)
+    try {
+      const res = await generateAIDescription({
+        name: form.name.trim(),
+        category: form.category.trim(),
+        price: form.price > 0 ? form.price : undefined,
+      })
+      setForm((prev) => ({ ...prev, description: res.description }))
+      setNotice(`✨ AI description generated via ${res.provider}!`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "AI generation failed"
+      setError(msg)
+    } finally {
+      setIsGeneratingDesc(false)
+    }
   }
 
   function saveProduct(event: FormEvent<HTMLFormElement>) {
@@ -114,12 +141,12 @@ export default function AdminDashboard() {
     <section className="admin-page">
       <div className="cart-heading sz-admin-dashboard-header">
         <div>
-          <p className="eyebrow">ADMINISTRATION</p>
-          <h1>Dashboard<span className="brand-dot">.</span></h1>
+          <p className="eyebrow">GENZ ZONE OPERATIONS</p>
+          <h1>Admin Dashboard<span className="brand-dot">.</span></h1>
         </div>
         <div className="sz-admin-profile-card" title={`Admin Profile: ${user.name} (${user.email})`}>
           <img
-            src={user.avatar || "/images/ntr_admin_avatar.png"}
+            src={user.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"}
             alt="Admin Profile"
             className="sz-admin-profile-avatar-img"
           />
@@ -136,17 +163,107 @@ export default function AdminDashboard() {
       {notice && <p className="form-message success-message" role="status">{notice}</p>}
 
       <section className="admin-section">
-        <h2>{editingId === null ? "Add product" : `Edit product #${editingId}`}</h2>
+        <h2>{editingId === null ? "Add new catalogue product" : `Edit product #${editingId}`}</h2>
         <form className="manage-form admin-product-form" onSubmit={saveProduct}>
-          <label>Name<input required maxLength={200} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+          <label>
+            Name
+            <input
+              required
+              maxLength={200}
+              placeholder="e.g. Wireless Noise Cancelling Over-Ear Headphones"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+          </label>
           <div className="form-row">
-            <label>Price<input required type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: Number(event.target.value) })} /></label>
-            <label>Category<input required maxLength={100} value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /></label>
+            <label>
+              Price
+              <input
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.price}
+                onChange={(event) => setForm({ ...form, price: Number(event.target.value) })}
+              />
+            </label>
+            <label>
+              Category
+              <input
+                required
+                maxLength={100}
+                placeholder="Electronics, Fashion, etc."
+                value={form.category}
+                onChange={(event) => setForm({ ...form, category: event.target.value })}
+              />
+            </label>
+            <label>
+              Stock Units
+              <input
+                type="number"
+                min="0"
+                value={form.stock ?? 50}
+                onChange={(event) => setForm({ ...form, stock: Number(event.target.value) })}
+              />
+            </label>
           </div>
-          <label>Image URL<input required type="url" value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} /></label>
-          <div className="admin-form-actions">
+          <label>
+            Image URL
+            <input
+              required
+              type="url"
+              placeholder="https://images.unsplash.com/..."
+              value={form.image}
+              onChange={(event) => setForm({ ...form, image: event.target.value })}
+            />
+          </label>
+
+          {/* AI-Generated Description Section */}
+          <div style={{ marginTop: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+              <label style={{ margin: 0, fontWeight: 600 }}>Product Description</label>
+              <button
+                type="button"
+                onClick={handleAiGenerateDescription}
+                disabled={isGeneratingDesc}
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  color: "#fff",
+                  border: "none",
+                  padding: "0.35rem 0.75rem",
+                  borderRadius: "6px",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: isGeneratingDesc ? "not-allowed" : "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
+                title="Automatically generate an Amazon-grade persuasive description using AI copywriter"
+              >
+                {isGeneratingDesc ? "✨ Generating Copy..." : "✨ AI Generate Description"}
+              </button>
+            </div>
+            <textarea
+              rows={4}
+              placeholder="Detailed description, bullet points, and product specifications..."
+              value={form.description || ""}
+              onChange={(event) => setForm({ ...form, description: event.target.value })}
+              style={{
+                width: "100%",
+                padding: "0.6rem",
+                borderRadius: "6px",
+                border: "1px solid var(--line, #cbd5e1)",
+                fontFamily: "inherit",
+                fontSize: "0.875rem",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div className="admin-form-actions" style={{ marginTop: "1rem" }}>
             <button className="primary-button" disabled={saveMutation.isPending} type="submit">
-              {saveMutation.isPending ? "Saving..." : editingId === null ? "Create product" : "Save changes"}
+              {saveMutation.isPending ? "Saving to PostgreSQL..." : editingId === null ? "Create product" : "Save changes"}
             </button>
             {editingId !== null && (
               <button className="secondary-button" type="button" onClick={() => { setEditingId(null); setForm(emptyProduct) }}>

@@ -203,10 +203,6 @@ class AIFallbackManager:
 
         # If we exhausted all providers without returning:
         logger.error("All configured LLM providers failed: %s", attempt_errors)
-        yield {
-            "type": "error",
-            "error": "All AI service providers are currently unavailable. Please try again shortly.",
-        }
         raise AllProvidersFailedError(
             "Every configured LLM provider failed to fulfill the request.", errors=attempt_errors
         )

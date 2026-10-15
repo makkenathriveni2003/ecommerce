@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useAuthStore } from "../store/authStore"
 import { getAIStatus, reindexCatalog, streamAIChat } from "../services/aiService"
 import { AICitationCard } from "../components/AICitationCard"
+import { GenZLogo } from "../components/GenZLogo"
 import type { AIChatMessage, AICitation, AIStatus } from "../../types"
 
 const SAMPLE_PROMPTS = [
@@ -21,7 +22,7 @@ export const AiAssistant: React.FC = () => {
       id: "welcome",
       role: "assistant",
       content:
-        "Hello! I am the ShopZone AI Shopping Assistant. Ask me anything about our products, current pricing in ₹ (INR), stock availability, or recommendations!",
+        "Hello! I am the GenZ Zone AI Shopping Assistant. Ask me anything about our trending Ganzee apparel, current pricing in ₹ (INR), stock availability, or recommendations!",
       provider: "System",
       timestamp: "Today",
     },
@@ -245,12 +246,13 @@ export const AiAssistant: React.FC = () => {
       {/* Page Header */}
       <div className="ai-assistant-header">
         <div className="ai-header-titles">
-          <h2>
-            ShopZone AI Assistant
+          <h2 style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            <GenZLogo size={28} />
+            <span>GenZ Zone AI Assistant</span>
             <span className="ai-live-badge">RAG Powered</span>
           </h2>
           <p className="ai-header-desc">
-            Ask natural shopping queries. Grounded in real ShopZone catalogue inventory, prices, and stock.
+            Ask natural shopping queries. Grounded in real GenZ Zone catalogue inventory, prices, and stock.
           </p>
         </div>
 
@@ -322,7 +324,7 @@ export const AiAssistant: React.FC = () => {
               {/* Bubble Header */}
               <div className="ai-message-meta">
                 <span className="ai-sender-name">
-                  {msg.role === "user" ? (user?.name ? user.name : "You") : "ShopZone Assistant"}
+                  {msg.role === "user" ? (user?.name ? user.name : "You") : "GenZ Zone Assistant"}
                 </span>
                 {msg.provider && msg.role === "assistant" && (
                   <span className="ai-provider-pill" title={`Processed by ${msg.provider} (${msg.model || "default"})`}>
@@ -432,7 +434,7 @@ export const AiAssistant: React.FC = () => {
                       id: "welcome",
                       role: "assistant",
                       content:
-                        "Conversation cleared. How can I help you discover products in ShopZone today?",
+                        "Conversation cleared. How can I help you discover products in GenZ Zone today?",
                       provider: "System",
                       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                     },

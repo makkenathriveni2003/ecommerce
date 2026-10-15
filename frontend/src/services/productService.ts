@@ -15,6 +15,8 @@ export interface NewProduct {
   price: number
   category: string
   image: string
+  description?: string
+  stock?: number
 }
 
 function readProduct(payload: unknown): Product {
@@ -48,6 +50,19 @@ export async function getProduct(
   return readProduct(
     await requestJson(`/products/${productId}`, { signal }),
   )
+}
+
+export async function getSimilarProducts(
+  productId: number,
+  limit: number = 4,
+  { signal }: ProductRequestOptions = {},
+): Promise<Product[]> {
+  try {
+    const payload = await requestJson(`/products/${productId}/similar?limit=${limit}`, { signal })
+    return readProducts(payload)
+  } catch {
+    return []
+  }
 }
 
 export async function createProduct(
@@ -105,6 +120,15 @@ export async function searchProducts(
 ): Promise<Product[]> {
   const params = new URLSearchParams({ q: query })
   const payload = await requestJson(`/products/search?${params}`, { signal })
+  return readProducts(payload)
+}
+
+export async function semanticSearchProducts(
+  query: string,
+  { signal }: ProductRequestOptions = {},
+): Promise<Product[]> {
+  const params = new URLSearchParams({ q: query, limit: "24" })
+  const payload = await requestJson(`/products/semantic-search?${params}`, { signal })
   return readProducts(payload)
 }
 

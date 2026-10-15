@@ -2,6 +2,7 @@ import { memo } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import type { Product } from "../../types"
 import { useCartStore } from "../store/cartStore"
+import { useFavoritesStore } from "../store/favoritesStore"
 
 interface ProductCardProps {
   product: Product
@@ -15,6 +16,8 @@ const ProductCard = memo(function ProductCard({
   priority = false,
 }: ProductCardProps) {
   const addToCart = useCartStore((state) => state.addToCart)
+  const isFavorite = useFavoritesStore((state) => state.isFavorite(product.id))
+  const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite)
   const navigate = useNavigate()
 
   const imageSrc = (width: number) => {
@@ -25,33 +28,56 @@ const ProductCard = memo(function ProductCard({
   }
 
   const handleCardClick = (e: React.MouseEvent<HTMLElement>) => {
-    // If the click is inside the "Add to Cart" button or an inner link, let it handle itself
+    // If the click is inside any interactive button or link, let it handle itself
     if ((e.target as HTMLElement).closest("button")) {
       return
     }
     navigate(`/products/${product.id}`)
   }
 
+  const handleToggleFav = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    toggleFavorite(product)
+  }
+
   return (
     <article className="product-card" onClick={handleCardClick}>
-      <Link
-        to={`/products/${product.id}`}
-        className="product-image-link"
-        aria-label={`View details for ${product.name}`}
-      >
-        <img
-          src={imageSrc(640)}
-          srcSet={`${imageSrc(320)} 320w, ${imageSrc(480)} 480w, ${imageSrc(640)} 640w`}
-          sizes="(max-width: 640px) calc((100vw - 47px) / 2), (max-width: 900px) calc((100vw - 108px) / 3), (max-width: 1344px) calc((100vw - 130px) / 4), 304px"
-          alt={product.name}
-          className="product-image"
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          fetchPriority={priority ? "high" : "auto"}
-          width={640}
-          height={480}
-        />
-      </Link>
+      <div className="product-card-image-wrapper">
+        <Link
+          to={`/products/${product.id}`}
+          className="product-image-link"
+          aria-label={`View details for ${product.name}`}
+        >
+          <img
+            src={imageSrc(640)}
+            srcSet={`${imageSrc(320)} 320w, ${imageSrc(480)} 480w, ${imageSrc(640)} 640w`}
+            sizes="(max-width: 640px) calc((100vw - 47px) / 2), (max-width: 900px) calc((100vw - 108px) / 3), (max-width: 1344px) calc((100vw - 130px) / 4), 304px"
+            alt={product.name}
+            className="product-image"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={priority ? "high" : "auto"}
+            width={640}
+            height={640}
+            onError={(e) => {
+              const target = e.currentTarget
+              if (target.src !== product.image) {
+                target.src = product.image
+              }
+            }}
+          />
+        </Link>
+        <button
+          type="button"
+          className={`product-card-fav-btn ${isFavorite ? "active" : ""}`}
+          onClick={handleToggleFav}
+          title={isFavorite ? "Remove from Favorites" : "Save to Favorites"}
+          aria-label={isFavorite ? `Remove ${product.name} from favorites` : `Add ${product.name} to favorites`}
+        >
+          {isFavorite ? "♥" : "♡"}
+        </button>
+      </div>
+
       <div className="product-info">
         <h2>
           <Link to={`/products/${product.id}`}>

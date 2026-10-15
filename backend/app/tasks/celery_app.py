@@ -47,6 +47,8 @@ celery_app.conf.update(
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     broker_connection_retry_on_startup=True,
+    broker_connection_timeout=1.5,
+    broker_transport_options={"max_retries": 1, "interval_start": 0.1, "interval_step": 0.1, "interval_max": 0.2},
 )
 
 if __name__ == "__main__":

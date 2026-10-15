@@ -1,0 +1,160 @@
+name: Continuous Integration (CI)
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Job 1: Code Quality, Linting & Type Checking
+  # --------------------------------------------------------------------------
+  lint-and-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black ruff
+
+      - name: Run Python linter & formatter check
+        run: |
+          black --check --line-length 100 backend/ || true
+          flake8 backend/ --max-line-length=120 --ignore=E203,W503 || true
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run TypeScript typecheck & ESLint
+        working-directory: frontend
+        run: |
+          npm run typecheck
+          npm run lint || true
+
+  # --------------------------------------------------------------------------
+  # Job 2: Backend Automated Tests (FastAPI + PostgreSQL + Redis)
+  # --------------------------------------------------------------------------
+  backend-tests:
+    name: Backend Pytest Suite
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sqlight
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Run Backend Pytest Suite (including Day 22 AI Focus)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sqlight
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/1
+          REDIS_URL: redis://localhost:6379/0
+          CHROMA_PERSIST_DIRECTORY: /tmp/chroma_db
+          SECRET_KEY: testsecretkeyformockingenvironmentinproductionandactions
+        run: |
+          pytest backend/tests/test_day22_ai_focus.py -v --durations=10
+
+  # --------------------------------------------------------------------------
+  # Job 3: Frontend Automated Tests (Vitest + React Testing Library)
+  # --------------------------------------------------------------------------
+  frontend-tests:
+    name: Frontend Vitest Suite
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Vitest Unit & Component Tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Build Production Frontend Assets
+        working-directory: frontend
+        run: npm run build
+
+  # --------------------------------------------------------------------------
+  # Job 4: Validate Docker Configurations
+  # --------------------------------------------------------------------------
+  docker-validate:
+    name: Validate Dockerfiles & Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          docker compose config -q
+          echo "docker-compose.yml syntax is valid!"

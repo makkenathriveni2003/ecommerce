@@ -1,0 +1,46 @@
+# ============================================================================
+# ShopZone / GenZ Zone Frontend - Multi-Stage Production Dockerfile
+# Stage 1: Compile TypeScript & bundle production assets with Vite / Rolldown
+# Stage 2: High-speed, unprivileged Nginx web server
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Stage 1: Build the production bundle
+# ----------------------------------------------------------------------------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Enable layer caching by copying package definitions first
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source code and configurations
+COPY frontend/ ./
+
+# Build production assets into dist/
+RUN npm run build
+
+# ----------------------------------------------------------------------------
+# Stage 2: Ultra-lightweight Nginx production runtime
+# ----------------------------------------------------------------------------
+FROM nginx:1.25-alpine AS runner
+
+# Remove default nginx boilerplate configuration
+RUN rm -rf /etc/nginx/conf.d/default.conf /usr/share/nginx/html/*
+
+# Copy custom Nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy compiled production artifacts from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose HTTP port
+EXPOSE 80
+
+# Healthcheck to verify Nginx serves index.html
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+
+# Start Nginx in foreground
+CMD ["nginx", "-g", "daemon off;"]

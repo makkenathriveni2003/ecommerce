@@ -11,6 +11,8 @@ from ...services.product_service import (
     create_product,
     get_product,
     get_products,
+    get_similar_products,
+    semantic_search_products,
 )
 from ...tasks.celery_tasks import bulk_import_products_csv_task
 
@@ -18,12 +20,27 @@ logger = logging.getLogger("shopzone_products_router")
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
+@router.get("/semantic-search")
+def semantic_search(
+    q: str = Query(..., min_length=1, description="Semantic product search query"),
+    limit: int = Query(default=20, ge=1, le=50),
+) -> list[dict[str, object]]:
+    """
+    Day 22 Semantic Search: Uses ChromaDB vector embeddings to match user shopping intent.
+    Retrieves records matching contextual similarity and falls back gracefully.
+    """
+    return semantic_search_products(query=q, limit=limit)
+
+
 @router.get("/search")
 def search_products(
     q: str = Query(..., min_length=1, description="Product search query"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
+    semantic: bool = Query(default=False, description="Enable AI embedding-based semantic search"),
 ) -> list[dict[str, object]]:
+    if semantic:
+        return semantic_search_products(query=q, limit=limit)
     return get_products(skip=skip, limit=limit, search=q)
 
 
@@ -40,6 +57,14 @@ def list_products(
 @router.get("/{product_id}")
 def retrieve_product(product_id: int) -> dict[str, object]:
     return get_product(product_id)
+
+
+@router.get("/{product_id}/similar")
+def retrieve_similar_products(
+    product_id: int,
+    limit: int = Query(default=4, ge=1, le=12),
+) -> list[dict[str, object]]:
+    return get_similar_products(product_id=product_id, limit=limit)
 
 
 @router.post("", dependencies=[Depends(require_admin)])

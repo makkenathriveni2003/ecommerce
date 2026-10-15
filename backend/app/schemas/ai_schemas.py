@@ -61,3 +61,22 @@ class AIStatusResponse(BaseModel):
     embedding_provider: str
     indexed_vectors_count: int
     configured_providers: dict[str, bool]
+    governance_metrics: dict[str, Any] | None = None
+
+
+class AIDescriptionRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=200, description="Product name")
+    category: str = Field(..., min_length=2, max_length=100, description="Product category")
+    price: float | None = Field(default=None, ge=0, description="Product price in INR")
+    keywords: list[str] | None = Field(default=None, description="Keywords or highlights")
+    tone: str = Field(default="persuasive and professional", description="Copywriting tone")
+
+
+class AIDescriptionResponse(BaseModel):
+    name: str
+    category: str
+    description: str
+    bullet_points: list[str] = Field(default_factory=list)
+    provider: str
+    model: str
+    cached: bool = False

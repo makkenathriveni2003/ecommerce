@@ -135,13 +135,21 @@ def generate_order_invoice(
     if user["role"] != "admin" and order["user_id"] != user["id"] and order["email"].lower() != user["email"].lower():
         raise HTTPException(status_code=403, detail="You do not have permission to generate this invoice")
 
-    task = generate_invoice_pdf_task.delay(order_id=order_id, user_email=user["email"])
+    try:
+        task = generate_invoice_pdf_task.delay(order_id=order_id, user_email=user["email"])
+        task_id = task.id
+        status = "PENDING"
+    except Exception as queue_err:
+        logging.getLogger("orders_router").warning("Celery queue unavailable (%s); generating invoice synchronously", queue_err)
+        generate_invoice_pdf_task(order_id=order_id, user_email=user["email"])
+        task_id = f"sync-{order_id}"
+        status = "SUCCESS"
 
     return {
         "success": True,
-        "task_id": task.id,
+        "task_id": task_id,
         "order_id": order_id,
-        "status": "PENDING",
+        "status": status,
         "message": f"Invoice generation task queued for Order #{order_id}",
     }
 

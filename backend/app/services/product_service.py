@@ -73,7 +73,93 @@ def get_products(
                 """,
                 (limit, skip),
             ).fetchall()
-    return [dict(row) for row in rows]
+    unique_products: List[Dict[str, Any]] = []
+    seen_names: set[str] = set()
+    seen_images: set[str] = set()
+    for row in rows:
+        d = dict(row)
+        name_key = d.get("name", "").strip().lower()
+        img_raw = d.get("image", "").strip()
+        img_key = img_raw.split("?")[0] if "?" in img_raw else img_raw
+        if name_key in seen_names or (img_key and img_key in seen_images):
+            continue
+        seen_names.add(name_key)
+        if img_key:
+            seen_images.add(img_key)
+        unique_products.append(d)
+    return unique_products
+
+
+def semantic_search_products(query: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """
+    Search products using ChromaDB embedding-based vector similarity.
+    Retrieves semantic matches according to contextual intent and fetches full
+    records from PostgreSQL in similarity rank order.
+    Gracefully falls back to PostgreSQL full-text/fuzzy search.
+    """
+    clean_q = query.strip()
+    if not clean_q:
+        return []
+
+    # Check Redis cache first
+    try:
+        from .ai.ai_cache import ai_cache
+        cached = ai_cache.get_cached_semantic_search(clean_q)
+        if cached:
+            return cached
+    except Exception:
+        ai_cache = None
+
+    matched_ids: list[int] = []
+    try:
+        from .ai import ChromaVectorStore
+        store = ChromaVectorStore()
+        if store.count() > 0:
+            similar_chunks = store.query_similar(query=clean_q, top_k=limit * 2)
+            for chunk in similar_chunks:
+                meta = chunk.get("metadata", {})
+                pid = meta.get("product_id")
+                if pid and pid not in matched_ids:
+                    try:
+                        matched_ids.append(int(pid))
+                    except (ValueError, TypeError):
+                        pass
+                if len(matched_ids) >= limit:
+                    break
+    except Exception:
+        pass
+
+    if matched_ids:
+        with database_connection() as connection:
+            placeholders = ", ".join(["%s"] * len(matched_ids))
+            rows = connection.execute(
+                f"""
+                SELECT id, name, price, category, image,
+                       COALESCE(description, '') AS description,
+                       COALESCE(stock, 50) AS stock
+                FROM products
+                WHERE id IN ({placeholders})
+                """,
+                tuple(matched_ids),
+            ).fetchall()
+            row_dict = {r["id"]: dict(r) for r in rows}
+            ordered = [row_dict[pid] for pid in matched_ids if pid in row_dict]
+            if ordered:
+                try:
+                    if ai_cache:
+                        ai_cache.set_cached_semantic_search(clean_q, ordered)
+                except Exception:
+                    pass
+                return ordered
+
+    # Fallback to full-text / trigram fuzzy search
+    fallback_results = get_products(skip=0, limit=limit, search=clean_q)
+    try:
+        if ai_cache and fallback_results:
+            ai_cache.set_cached_semantic_search(clean_q, fallback_results)
+    except Exception:
+        pass
+    return fallback_results
 
 
 def get_product(product_id: int) -> Dict[str, Any]:
@@ -91,6 +177,112 @@ def get_product(product_id: int) -> Dict[str, Any]:
     if row is None:
         raise HTTPException(status_code=404, detail="Product not found")
     return dict(row)
+
+
+def get_similar_products(product_id: int, limit: int = 4) -> List[Dict[str, Any]]:
+    """
+    Retrieve smart cross-category styling recommendations ("Complete The Look").
+    Instead of showing identical duplicates, recommends matching complementary
+    different clothes and accessories (e.g., pairs tops with jeans/sneakers,
+    kurtis with heels/handbags/jewellery) just like Amazon and modern shopping apps.
+    """
+    with database_connection() as connection:
+        current_p = connection.execute(
+            "SELECT id, category, name FROM products WHERE id = %s",
+            (product_id,),
+        ).fetchone()
+
+        if not current_p:
+            return []
+
+        name = (current_p["name"] or "").lower()
+        cat = (current_p["category"] or "").lower()
+
+        is_ethnic_or_dress = any(w in name for w in ["kurti", "anarkali", "dress", "maxi", "skirt"])
+        is_top = any(w in name for w in ["hoodie", "tee", "shirt", "vest", "tank", "jacket", "crewneck", "stringer"])
+        is_bottom = any(w in name for w in ["jean", "short", "pant", "trouser"])
+        is_shoe = "shoe" in cat or any(w in name for w in ["heel", "flat", "sneaker", "pump", "loafer"])
+        is_bag = "bag" in cat or any(w in name for w in ["tote", "handbag", "backpack", "satchel"])
+
+        if is_ethnic_or_dress:
+            complementary_targets = [
+                ("Shoes", ["heel", "flat", "sandal"]),
+                ("Bags", ["tote", "handbag", "satchel"]),
+                ("Jewellery", ["necklace", "choker", "earring"]),
+                ("Accessories", ["watch", "bracelet"]),
+            ]
+        elif is_top:
+            complementary_targets = [
+                ("Fashion", ["jean", "short", "pant"]),
+                ("Shoes", ["sneaker", "running", "shoe"]),
+                ("Bags", ["backpack", "bag"]),
+                ("Accessories", ["watch"]),
+            ]
+        elif is_bottom:
+            complementary_targets = [
+                ("Fashion", ["tee", "shirt", "hoodie", "vest"]),
+                ("Shoes", ["sneaker", "running", "shoe"]),
+                ("Bags", ["backpack", "bag"]),
+                ("Accessories", ["watch"]),
+            ]
+        elif is_shoe:
+            complementary_targets = [
+                ("Fashion", ["dress", "jean", "kurti", "shirt"]),
+                ("Bags", ["tote", "handbag", "backpack"]),
+                ("Jewellery", ["necklace", "earring", "bracelet"]),
+                ("Accessories", ["watch"]),
+            ]
+        elif is_bag:
+            complementary_targets = [
+                ("Fashion", ["dress", "kurti", "shirt", "jean"]),
+                ("Shoes", ["heel", "flat", "sneaker"]),
+                ("Jewellery", ["necklace", "earring"]),
+                ("Accessories", ["watch"]),
+            ]
+        else:
+            complementary_targets = [
+                ("Fashion", []),
+                ("Shoes", []),
+                ("Bags", []),
+                ("Accessories", []),
+            ]
+
+        results = []
+        selected_ids = {product_id}
+
+        for target_cat, keywords in complementary_targets:
+            if len(results) >= limit:
+                break
+
+            query = "SELECT id, name, price, category, image, COALESCE(description, '') as description, COALESCE(stock, 50) as stock FROM products WHERE category = %s AND id != %s"
+            params = [target_cat, product_id]
+
+            if keywords:
+                kw_clauses = " OR ".join(["name ILIKE %s" for _ in keywords])
+                query += f" AND ({kw_clauses})"
+                params.extend([f"%{kw}%" for kw in keywords])
+
+            query += " ORDER BY id DESC LIMIT 5"
+            rows = connection.execute(query, tuple(params)).fetchall()
+
+            for r in rows:
+                if r["id"] not in selected_ids and len(results) < limit:
+                    selected_ids.add(r["id"])
+                    results.append(dict(r))
+                    break
+
+        if len(results) < limit:
+            needed = limit - len(results)
+            exclude_ids = list(selected_ids)
+            placeholders = ", ".join(["%s"] * len(exclude_ids))
+            extra = connection.execute(
+                f"SELECT id, name, price, category, image, COALESCE(description, '') as description, COALESCE(stock, 50) as stock FROM products WHERE id NOT IN ({placeholders}) ORDER BY id DESC LIMIT %s",
+                tuple(exclude_ids + [needed]),
+            ).fetchall()
+            for r in extra:
+                results.append(dict(r))
+
+        return results
 
 
 def create_product(product: ProductData) -> Dict[str, Any]:

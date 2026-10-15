@@ -13,6 +13,10 @@ class Settings:
     PROJECT_NAME: str = "ShopZone E-Commerce API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development").strip().lower()
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+    SENTRY_DSN: str = os.getenv("SENTRY_DSN", "").strip()
+    PROMETHEUS_METRICS_ENABLED: bool = os.getenv("PROMETHEUS_METRICS_ENABLED", "true").lower() in ("true", "1", "yes")
 
     # Database Settings
     DATABASE_ENGINE: str = os.getenv("DATABASE_ENGINE", "postgres").strip().lower()

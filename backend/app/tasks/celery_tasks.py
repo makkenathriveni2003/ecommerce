@@ -489,3 +489,100 @@ def bulk_import_products_csv_task(self, file_path: str, user_email: str) -> dict
         "errors": errors,
         "message": f"CSV import completed: {imported_count} imported/updated, {failed_count} failed.",
     }
+
+
+@celery_app.task(name="tasks.generate_product_description_task", bind=True)
+def generate_product_description_task(
+    self,
+    name: str,
+    category: str,
+    price: float | None = None,
+    keywords: list[str] | None = None,
+) -> dict[str, Any]:
+    """Asynchronous Celery task for AI product description generation."""
+    logger.info("Starting background AI description generation for '%s'", name)
+    _safe_update_state(
+        self,
+        state="PROGRESS",
+        meta={
+            "percent": 25,
+            "message": f"Analyzing attributes for {name} ({category})...",
+            "status": "PROGRESS",
+        },
+    )
+
+    import asyncio
+    from ..services.ai.description_generator import description_generator
+
+    _safe_update_state(
+        self,
+        state="PROGRESS",
+        meta={
+            "percent": 65,
+            "message": "Generating Amazon-grade persuasive copy with AI...",
+            "status": "PROGRESS",
+        },
+    )
+
+    loop = asyncio.new_event_loop()
+    try:
+        result = loop.run_until_complete(
+            description_generator.generate_description(
+                name=name, category=category, price=price, keywords=keywords
+            )
+        )
+    finally:
+        loop.close()
+
+    return {
+        "status": "SUCCESS",
+        "percent": 100,
+        "name": name,
+        "category": category,
+        "description": result.get("description", ""),
+        "bullet_points": result.get("bullet_points", []),
+        "provider": result.get("provider", ""),
+        "model": result.get("model", ""),
+        "cached": result.get("cached", False),
+        "message": f"AI description for '{name}' generated successfully.",
+    }
+
+
+@celery_app.task(name="tasks.reindex_catalog_task", bind=True)
+def reindex_catalog_task(self) -> dict[str, Any]:
+    """Asynchronous Celery task for full catalogue ChromaDB reindexing."""
+    logger.info("Starting asynchronous catalog reindexing")
+    _safe_update_state(
+        self,
+        state="PROGRESS",
+        meta={
+            "percent": 20,
+            "message": "Loading product catalogue from PostgreSQL database...",
+            "status": "PROGRESS",
+        },
+    )
+
+    from ..services.ai import CatalogIndexer
+
+    _safe_update_state(
+        self,
+        state="PROGRESS",
+        meta={
+            "percent": 60,
+            "message": "Generating vector embeddings and upserting into ChromaDB...",
+            "status": "PROGRESS",
+        },
+    )
+
+    indexer = CatalogIndexer()
+    summary = indexer.reindex_all_products(clear_existing=True)
+
+    return {
+        "status": "SUCCESS",
+        "percent": 100,
+        "products_indexed": summary.get("products_indexed", 0),
+        "chunks_indexed": summary.get("chunks_indexed", 0),
+        "total_vectors": summary.get("total_vectors", 0),
+        "message": summary.get("message", "Catalog reindexed successfully"),
+    }
+

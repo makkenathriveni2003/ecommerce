@@ -1,0 +1,236 @@
+# ============================================================================
+# Thriveni ShopZone - Complete Multi-Container Stack (Docker Compose)
+# Orchestrates: FastAPI Backend, Nginx Frontend, PostgreSQL 16, Redis 7,
+# Celery Worker, Celery Beat Scheduler, and ChromaDB Vector Store.
+# ============================================================================
+
+name: thriveni-shopzone
+
+networks:
+  thriveni-network:
+    driver: bridge
+    name: thriveni-network
+  shopzone-network:
+    driver: bridge
+    name: shopzone-network
+
+volumes:
+  postgres_data:
+    name: thriveni_postgres_data
+  redis_data:
+    name: thriveni_redis_data
+  chroma_data:
+    name: thriveni_chroma_data
+  app_logs:
+    name: thriveni_app_logs
+  app_uploads:
+    name: thriveni_app_uploads
+
+services:
+  # --------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: thriveni-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sqlight}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - thriveni-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sqlight}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # 2. Redis Caching, Rate Limiting & Message Broker
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: thriveni-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - thriveni-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # --------------------------------------------------------------------------
+  # 3. ChromaDB Vector Database Service (RAG Assistant Embeddings)
+  # --------------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: thriveni-chromadb
+    restart: unless-stopped
+    volumes:
+      - chroma_data:/chroma/chroma
+    ports:
+      - "8001:8000"
+    networks:
+      - thriveni-network
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8000 && exec 3>&-'"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # 4. FastAPI Application Backend
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: thriveni-backend:latest
+    container_name: thriveni-backend
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sqlight}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-sqlight}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_PERSIST_DIRECTORY: /app/data/chroma_db
+    volumes:
+      - app_logs:/app/logs
+      - app_uploads:/app/uploads
+    ports:
+      - "8000:8000"
+    networks:
+      - thriveni-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # --------------------------------------------------------------------------
+  # 5. Celery Asynchronous Background Worker
+  # --------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: thriveni-backend:latest
+    container_name: thriveni-celery-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "worker", "--loglevel=info", "-c", "2"]
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sqlight}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-sqlight}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - app_logs:/app/logs
+      - app_uploads:/app/uploads
+    networks:
+      - thriveni-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  # --------------------------------------------------------------------------
+  # 6. Celery Beat Periodic Scheduler (Daily reports, vector sync, cleanup)
+  # --------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: thriveni-backend:latest
+    container_name: thriveni-celery-beat
+    restart: unless-stopped
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "beat", "--loglevel=info"]
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-sqlight}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-sqlight}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - app_logs:/app/logs
+    networks:
+      - thriveni-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+
+  # --------------------------------------------------------------------------
+  # 7. Frontend SPA Web Application (Nginx + React)
+  # --------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: thriveni-frontend:latest
+    container_name: thriveni-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+      - "80:80"
+    networks:
+      - thriveni-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

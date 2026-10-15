@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { loginAccount, registerAccount } from "../services/authService"
 import { useAuthStore } from "../store/authStore"
+import { GenZLogo } from "../components/GenZLogo"
 
 interface LoginProps {
   initialRole?: "shopper" | "admin"
@@ -85,16 +86,16 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
 
   return (
     <div className="sz-login-container">
-      {/* 1. ShopZone Brand Banner */}
+      {/* 1. GenZ Zone Brand Banner */}
       <div className="sz-brand-header">
-        <Link to="/" className="sz-brand-link" aria-label="ShopZone Home">
-          <span className="sz-brand-mark" aria-hidden="true">S</span>
+        <Link to="/" className="sz-brand-link" aria-label="GenZ Zone Home">
+          <GenZLogo size={42} />
           <span className="sz-brand-title">
-            SHOPZONE<span className="brand-dot">.</span>
+            GENZ ZONE<span className="brand-dot">✦</span>
           </span>
         </Link>
         <p className="sz-brand-tagline">
-          Curated Essentials &bull; Instant Delivery &bull; Verified Secure
+          Trending Ganzee Apparel &bull; Streetwear &bull; Everyday Essentials &bull; Mega Festive Deals
         </p>
       </div>
 
@@ -113,7 +114,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
             <span className="sz-tab-icon" aria-hidden="true">👤</span>
             <div className="sz-tab-content">
               <span className="sz-tab-title">Customer Login</span>
-              <span className="sz-tab-badge user-badge">User: Thanu</span>
+              <span className="sz-tab-badge user-badge">Customer Demo</span>
             </div>
           </button>
 
@@ -127,7 +128,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
             <span className="sz-tab-icon" aria-hidden="true">👑</span>
             <div className="sz-tab-content">
               <span className="sz-tab-title">Admin Login</span>
-              <span className="sz-tab-badge admin-crown-badge">Admin: Thriveni</span>
+              <span className="sz-tab-badge admin-crown-badge">Admin Demo</span>
             </div>
           </button>
         </div>
@@ -141,7 +142,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
               </div>
               <h1>Admin sign-in<span className="brand-dot">.</span></h1>
               <p className="sz-header-desc">
-                Welcome back, <strong>Thriveni</strong>. Enter your credentials to access operations, live orders, and catalog management.
+                Welcome back. Enter your credentials to access operations, live orders, and catalog management.
               </p>
             </div>
           ) : (
@@ -152,8 +153,8 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
               <h1>{isRegistering ? "Create an account." : "Welcome back."}</h1>
               <p className="sz-header-desc">
                 {isRegistering
-                  ? "Create a ShopZone account to save orders and get real-time tracking."
-                  : <>Welcome back, <strong>Thanu</strong>. Sign in to your shopping account.</>}
+                  ? "Create a GenZ Zone account to save orders and get real-time tracking."
+                  : <>Welcome back. Sign in to your GenZ Zone shopping account.</>}
               </p>
             </div>
           )}
@@ -161,24 +162,19 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
 
         {/* Quick Account Chips */}
         <div className="sz-preset-strip">
-          <span className="sz-preset-label">Active profile:</span>
+          <span className="sz-preset-label">Quick presets:</span>
           {activeRole === "shopper" ? (
             <>
               <button
                 type="button"
-                className="sz-preset-chip cbn-profile-chip"
+                className="sz-preset-chip"
                 onClick={() => {
-                  setEmail("cbn@gmail.com")
-                  setPassword("cbn12345")
+                  setEmail("customer@genzzone.com")
+                  setPassword("customer12345")
                 }}
-                title="Click to sign in with CBN profile"
+                title="Click to sign in with GenZ Zone Customer profile"
               >
-                <img
-                  src="/images/cbn_profile_thumb.png"
-                  alt="CBN"
-                  className="sz-preset-avatar"
-                />
-                <span>🌟 CBN (cbn@gmail.com)</span>
+                <span>🛍️ Customer (customer@genzzone.com)</span>
               </button>
               <button
                 type="button"
@@ -193,40 +189,22 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
             <>
               <button
                 type="button"
-                className="sz-preset-chip admin-chip ntr-profile-chip"
+                className="sz-preset-chip admin-chip"
                 onClick={() => {
-                  setEmail("ntr@shopzone.com")
-                  setPassword("ntr12345")
+                  setEmail("admin@genzzone.com")
+                  setPassword("adminpassword123")
                 }}
-                title="Click to sign in with NTR Admin profile"
+                title="Click to sign in with GenZ Zone Admin profile"
               >
-                <img
-                  src="/images/ntr_admin_thumb.png"
-                  alt="NTR Admin"
-                  className="sz-preset-avatar"
-                />
-                <span>👑 NTR (ntr@shopzone.com)</span>
-              </button>
-              <button
-                type="button"
-                className="sz-preset-chip admin-chip cbn-profile-chip"
-                onClick={() => {
-                  setEmail("cbn@shopzone.com")
-                  setPassword("cbn12345")
-                }}
-                title="Click to sign in with CBN Admin profile"
-              >
-                <img
-                  src="/images/cbn_profile_thumb.png"
-                  alt="CBN"
-                  className="sz-preset-avatar"
-                />
-                <span>👑 CBN (cbn@shopzone.com)</span>
+                <span>👑 Admin (admin@genzzone.com)</span>
               </button>
               <button
                 type="button"
                 className="sz-preset-chip admin-chip"
-                onClick={() => setEmail("thriveni@gmail.com")}
+                onClick={() => {
+                  setEmail("thriveni@gmail.com")
+                  setPassword("Thanu@123")
+                }}
                 title="Click to fill Thriveni's email"
               >
                 👑 Thriveni (thriveni@gmail.com)
@@ -345,7 +323,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
         {activeRole === "shopper" ? (
           <div className="sz-card-footer-toggle">
             <div className="sz-divider-line">
-              <span>{isRegistering ? "Already registered?" : "New to ShopZone?"}</span>
+              <span>{isRegistering ? "Already registered?" : "New to GenZ Zone?"}</span>
             </div>
             <button
               className="text-button auth-mode-toggle sz-secondary-toggle-btn"
@@ -371,7 +349,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
               className="text-button sz-secondary-toggle-btn"
               onClick={() => handleRoleSwitch("shopper")}
             >
-              Switch to Customer Login (Thanu)
+              Switch to Customer Login
             </button>
           </div>
         )}
@@ -383,7 +361,7 @@ export default function Login({ initialRole, onSuccess }: LoginProps) {
             <span>256-Bit Encrypted JWT Authentication</span>
           </div>
           <div className="sz-trust-links">
-            <Link to="/">ShopZone Home</Link>
+            <Link to="/">GenZ Zone Home</Link>
             <span>&bull;</span>
             <Link to="/cart">Shopping Bag</Link>
           </div>

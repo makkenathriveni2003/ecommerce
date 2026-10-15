@@ -16,10 +16,14 @@ from ...core.security import require_admin
 from ...schemas.ai_schemas import (
     AIChatRequest,
     AIChatResponse,
+    AIDescriptionRequest,
+    AIDescriptionResponse,
     AIIndexResponse,
     AIStatusResponse,
 )
 from ...services.ai import AIChatOrchestrator, CatalogIndexer, ChromaVectorStore
+from ...services.ai.ai_cache import ai_cache
+from ...services.ai.description_generator import description_generator
 
 logger = logging.getLogger("shopzone_api.ai")
 
@@ -166,4 +170,39 @@ def get_ai_status(
             "mistral": bool(settings.MISTRAL_API_KEY),
             "openai_compatible": bool(settings.OPENAI_API_KEY),
         },
+        governance_metrics=ai_cache.get_governance_metrics(),
     )
+
+
+@router.post(
+    "/generate-description",
+    response_model=AIDescriptionResponse,
+    summary="Generate high-converting, Amazon-standard product description via AI",
+)
+@limiter.limit(settings.AI_RATE_LIMIT)
+async def generate_product_description_endpoint(
+    request: Request,
+    payload: AIDescriptionRequest,
+) -> AIDescriptionResponse:
+    """
+    Day 22 AI-Generated Product Descriptions:
+    Uses LLMs (Gemini / Groq / Mistral / OpenAI) with Redis caching to produce
+    SEO-optimized, persuasive product descriptions with key bullet points.
+    """
+    result = await description_generator.generate_description(
+        name=payload.name,
+        category=payload.category,
+        price=payload.price,
+        keywords=payload.keywords,
+        tone=payload.tone,
+    )
+    return AIDescriptionResponse(
+        name=result["name"],
+        category=result["category"],
+        description=result["description"],
+        bullet_points=result.get("bullet_points", []),
+        provider=result.get("provider", "ai"),
+        model=result.get("model", ""),
+        cached=result.get("cached", False),
+    )
+

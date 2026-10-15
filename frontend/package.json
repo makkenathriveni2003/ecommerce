@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "serve": "node serve-prod.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -15,6 +16,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@sentry/react": "^11.7.0",
     "@tanstack/react-query": "^5.104.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

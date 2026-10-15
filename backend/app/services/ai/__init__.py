@@ -3,8 +3,14 @@ ShopZone AI Package
 Provides modular LLM providers, fallback orchestration, RAG indexing,
 and SSE chat streaming grounded in the ShopZone product catalogue.
 """
+from .ai_cache import AICacheManager, ai_cache
 from .chat_orchestrator import AIChatOrchestrator, sse_event
 from .citations import format_citations_from_retrieved
+from .description_generator import (
+    ProductDescriptionGenerator,
+    description_generator,
+    generate_ai_product_description,
+)
 from .embeddings import (
     BaseEmbeddingProvider,
     GeminiEmbeddingProvider,
@@ -63,4 +69,9 @@ __all__ = [
     "format_citations_from_retrieved",
     "AIChatOrchestrator",
     "sse_event",
+    "ai_cache",
+    "AICacheManager",
+    "description_generator",
+    "generate_ai_product_description",
+    "ProductDescriptionGenerator",
 ]

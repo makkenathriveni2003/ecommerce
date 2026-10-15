@@ -10,15 +10,20 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from .core.config import settings
+from .core.logging_config import setup_structured_logging
+from .core.metrics import get_metrics_response, initialize_metrics
 from .core.rate_limit import limiter, rate_limit_exceeded_handler
 from .core.security import validate_token_configuration
-from .db.database import initialize_database
+from .core.sentry import init_sentry
+from .db.database import database_connection, initialize_database
 from .middleware.compression import setup_compression
+from .middleware.request_logging import RequestLoggingMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
 
 from .api.routers import admin, ai, auth, chat, orders, products, tasks, websocket
 
-logging.basicConfig(level=logging.INFO)
+# Initialize structured JSON logging with level from configuration
+setup_structured_logging(level=settings.LOG_LEVEL, service_name="shopzone-api")
 logger = logging.getLogger("shopzone_api")
 
 
@@ -27,6 +32,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     validate_token_configuration()
     initialize_database()
     app.state.database_ready = True
+
+    # Initialize Sentry exception tracking (optional if SENTRY_DSN configured)
+    init_sentry(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        release=f"shopzone-backend@{settings.VERSION}",
+    )
+
+    # Initialize Prometheus metadata gauge
+    initialize_metrics(
+        version=settings.VERSION,
+        environment=settings.ENVIRONMENT,
+        service="shopzone-api",
+    )
 
     # Seed ChromaDB vector store if empty
     try:
@@ -42,8 +61,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="ShopZone E-Commerce API",
-    description="High-performance, secure e-commerce REST & WebSocket API with Celery background processing",
+    title="GenZ Zone E-Commerce API",
+    description="High-performance, AI-enhanced e-commerce REST & WebSocket API with Celery background processing and Redis caching",
     version=settings.VERSION,
     lifespan=lifespan,
 )
@@ -67,6 +86,9 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # 4. GZip Response Compression Middleware
 setup_compression(app, minimum_size=settings.GZIP_MINIMUM_SIZE)
+
+# 5. Request Correlation & Metrics Middleware (outermost wrapper for end-to-end timing)
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # 5. Global Exception Handlers
@@ -127,10 +149,55 @@ app.include_router(ai.router)
 
 @app.get("/")
 def home() -> dict[str, str]:
-    return {"message": "ShopZone E-Commerce Backend Running", "version": settings.VERSION}
+    return {"message": "GenZ Zone E-Commerce Backend Running", "version": settings.VERSION}
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "shopzone-api", "version": settings.VERSION}
+def health(strict: bool = False) -> JSONResponse:
+    """
+    Application Health Check.
+    Probes core database and caching infrastructure without leaking internal credentials.
+    """
+    db_ok = False
+    try:
+        with database_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                cur.fetchone()
+        db_ok = True
+    except Exception as db_err:
+        logger.warning("Database health probe failed: %s", db_err)
+
+    redis_ok = False
+    try:
+        import redis
+        client = redis.from_url(settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1)
+        redis_ok = bool(client.ping())
+    except Exception as redis_err:
+        logger.debug("Redis health probe failed: %s", redis_err)
+
+    components = {
+        "database": "healthy" if db_ok else "unhealthy",
+        "redis": "healthy" if redis_ok else "unhealthy",
+    }
+
+    is_healthy = (db_ok and redis_ok) if strict else db_ok
+    status_code = 200 if is_healthy else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if (db_ok and redis_ok) else ("degraded" if db_ok else "unhealthy"),
+            "service": "shopzone-api",
+            "version": settings.VERSION,
+            "environment": settings.ENVIRONMENT,
+            "components": components,
+        },
+    )
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    """Prometheus Scrape Endpoint."""
+    return get_metrics_response()
 

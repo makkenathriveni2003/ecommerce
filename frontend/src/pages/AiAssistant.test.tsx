@@ -28,8 +28,8 @@ describe("AiAssistant Page Component", () => {
   it("renders the AI assistant header, status chips, and sample prompts", async () => {
     renderApp(<AiAssistant />)
 
-    expect(screen.getByRole("heading", { name: /ShopZone AI Assistant/i })).toBeInTheDocument()
-    expect(screen.getByText(/Grounded in real ShopZone catalogue/i)).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /(ShopZone|Chow Zoon|Smart Bazaar|Ganzee Zoon|GenZ Zone) AI Assistant/i })).toBeInTheDocument()
+    expect(screen.getByText(/Grounded in real (ShopZone|Chow Zoon|Smart Bazaar|Ganzee Zoon|GenZ Zone) catalogue/i)).toBeInTheDocument()
 
     // Status chips
     expect(await screen.findByText(/Primary:/i)).toBeInTheDocument()
@@ -39,7 +39,7 @@ describe("AiAssistant Page Component", () => {
     expect(screen.getByRole("button", { name: /Which headphones are available under ₹3,000\?/i })).toBeInTheDocument()
 
     // Welcome message
-    expect(screen.getByText(/Ask me anything about our products, current pricing/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ask me anything about our (products|trending Ganzee apparel), current pricing/i)).toBeInTheDocument()
   })
 
   it("sends a user question and renders streaming response and citations", async () => {
