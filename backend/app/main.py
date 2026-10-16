@@ -169,9 +169,15 @@ def health(strict: bool = False) -> JSONResponse:
     db_ok = False
     try:
         with database_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
-                cur.fetchone()
+            if hasattr(conn, "cursor"):
+                cur = conn.cursor()
+                if hasattr(cur, "__enter__"):
+                    with cur as c:
+                        c.execute("SELECT 1")
+                else:
+                    cur.execute("SELECT 1")
+            else:
+                conn.execute("SELECT 1")
         db_ok = True
     except Exception as db_err:
         logger.warning("Database health probe failed: %s", db_err)

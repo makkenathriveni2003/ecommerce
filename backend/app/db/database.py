@@ -34,11 +34,18 @@ else:
         pass
 
 
+import tempfile
+
 _ENGINE: str | None = None
 if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("RENDER"):
-    _SQLITE_PATH = Path("/tmp/ecommerce.db")
+    _SQLITE_PATH = Path(tempfile.gettempdir()) / "ecommerce.db"
 else:
     _SQLITE_PATH = settings.BASE_DIR / "ecommerce.db"
+
+try:
+    _SQLITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 
 def _detect_engine() -> str:
@@ -46,53 +53,60 @@ def _detect_engine() -> str:
     if _ENGINE is not None:
         return _ENGINE
 
-    forced = settings.DATABASE_ENGINE
+    # Check for explicit SQLite request
+    forced = os.getenv("DATABASE_ENGINE", "").strip().lower()
     if forced in ("sqlite", "sqlite3"):
         _ENGINE = "sqlite"
         return _ENGINE
-    if forced in ("postgres", "postgresql", "psql"):
-        _ENGINE = "postgres"
-        return _ENGINE
-    if forced:
-        raise ValueError("DATABASE_ENGINE must be set to 'postgres' or 'sqlite'.")
 
-    # If running on Vercel or Render without a configured remote PGHOST, default to sqlite
-    if (os.environ.get("VERCEL") or os.environ.get("RENDER")) and (not os.environ.get("PGHOST") or os.environ.get("PGHOST") in ("localhost", "127.0.0.1")):
+    # On cloud serverless/containers (Render, Vercel, AWS Lambda) without remote PG, default to SQLite
+    is_cloud = bool(os.environ.get("VERCEL") or os.environ.get("RENDER") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    has_remote_pg = bool(os.environ.get("DATABASE_URL") or (os.environ.get("PGHOST") and os.environ.get("PGHOST") not in ("localhost", "127.0.0.1")))
+
+    if is_cloud and not has_remote_pg:
         _ENGINE = "sqlite"
         return _ENGINE
 
-    if HAS_PSYCOPG:
-        try:
-            with psycopg.connect(
-                host=settings.PGHOST,
-                port=settings.PGPORT,
-                dbname=settings.PGDATABASE,
-                user=settings.PGUSER,
-                password=settings.PGPASSWORD or None,
-                connect_timeout=1,
-            ):
-                _ENGINE = "postgres"
-                return _ENGINE
-        except psycopg.Error as error:
-            if os.environ.get("VERCEL") or os.environ.get("RENDER"):
-                _ENGINE = "sqlite"
-                return _ENGINE
-            raise RuntimeError(
-                "PostgreSQL is unavailable. Start PostgreSQL or explicitly set "
-                "DATABASE_ENGINE=sqlite for local development."
-            ) from error
+    if forced in ("postgres", "postgresql", "psql") or has_remote_pg:
+        if HAS_PSYCOPG:
+            try:
+                db_url = os.environ.get("DATABASE_URL")
+                if db_url:
+                    with psycopg.connect(db_url, connect_timeout=2):
+                        _ENGINE = "postgres"
+                        return _ENGINE
+                else:
+                    with psycopg.connect(
+                        host=settings.PGHOST,
+                        port=settings.PGPORT,
+                        dbname=settings.PGDATABASE,
+                        user=settings.PGUSER,
+                        password=settings.PGPASSWORD or None,
+                        connect_timeout=2,
+                    ):
+                        _ENGINE = "postgres"
+                        return _ENGINE
+            except Exception as error:
+                if is_cloud:
+                    _ENGINE = "sqlite"
+                    return _ENGINE
+                raise RuntimeError(
+                    "PostgreSQL is unavailable. Start PostgreSQL or explicitly set "
+                    "DATABASE_ENGINE=sqlite for local development."
+                ) from error
 
-    if os.environ.get("VERCEL") or os.environ.get("RENDER"):
+    if is_cloud:
         _ENGINE = "sqlite"
         return _ENGINE
 
-    raise RuntimeError(
-        "PostgreSQL support is not installed. Install backend requirements "
-        "or explicitly set DATABASE_ENGINE=sqlite for local development."
-    )
+    _ENGINE = "postgres"
+    return _ENGINE
 
 
 def _connect_pg() -> Any:
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        return psycopg.connect(db_url, connect_timeout=5, row_factory=dict_row)
     return psycopg.connect(
         host=settings.PGHOST,
         port=settings.PGPORT,
@@ -175,6 +189,9 @@ class SQLiteConnectionWrapper:
             if "foreign key" in msg:
                 raise ForeignKeyViolation(str(error)) from error
             raise
+
+    def cursor(self) -> Any:
+        return self._conn.cursor()
 
     def commit(self) -> None:
         self._conn.commit()

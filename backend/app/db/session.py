@@ -22,10 +22,15 @@ def get_database_url() -> str:
         (os.environ.get("VERCEL") or os.environ.get("RENDER"))
         and (not os.environ.get("PGHOST") or os.environ.get("PGHOST") in ("localhost", "127.0.0.1"))
     ):
+        import tempfile
         if os.environ.get("VERCEL") or os.environ.get("RENDER"):
-            db_path = Path("/tmp/ecommerce.db")
+            db_path = Path(tempfile.gettempdir()) / "ecommerce.db"
         else:
             db_path = settings.BASE_DIR / "ecommerce.db"
+        try:
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
         return f"sqlite:///{db_path}"
     
     user = settings.PGUSER
