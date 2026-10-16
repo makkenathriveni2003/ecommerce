@@ -71,15 +71,23 @@ async def admin_import_products_csv(
         logger.error("Failed to save uploaded CSV: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to save uploaded CSV: {str(e)}")
 
-    task = bulk_import_products_csv_task.delay(str(temp_path), user["email"])
-    logger.info("Queued bulk CSV import task %s for file %s by %s", task.id, file.filename, user["email"])
+    try:
+        task = bulk_import_products_csv_task.delay(str(temp_path), user["email"])
+        task_id = task.id
+        status = "PENDING"
+        logger.info("Queued bulk CSV import task %s for file %s by %s", task_id, file.filename, user["email"])
+    except Exception as queue_err:
+        logger.warning("Celery queue unavailable (%s); importing CSV synchronously", queue_err)
+        bulk_import_products_csv_task(str(temp_path), user["email"])
+        task_id = f"sync-{uuid.uuid4().hex[:8]}"
+        status = "SUCCESS"
 
     return {
         "success": True,
-        "task_id": task.id,
-        "status": "PENDING",
+        "task_id": task_id,
+        "status": status,
         "filename": file.filename,
-        "message": f"CSV import queued with task ID {task.id}",
+        "message": f"CSV import queued with task ID {task_id}",
     }
 
 
