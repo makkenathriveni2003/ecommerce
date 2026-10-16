@@ -2,11 +2,11 @@ import { useAuthStore } from "../store/authStore"
 
 export const API_URL = (
   import.meta.env.VITE_API_URL ??
-  (typeof process !== "undefined" && process.env?.BACKEND_URL ? process.env.BACKEND_URL : "http://127.0.0.1:8000")
+  (typeof process !== "undefined" && process.env?.BACKEND_URL ? process.env.BACKEND_URL : "https://ecommerce-r5kv.onrender.com")
 ).replace(/\/+$/, "")
 
 export const WS_URL = (
-  import.meta.env.VITE_WS_URL ?? "ws://127.0.0.1:8000/ws"
+  import.meta.env.VITE_WS_URL ?? "wss://ecommerce-r5kv.onrender.com/ws"
 ).replace(/\/+$/, "")
 
 
