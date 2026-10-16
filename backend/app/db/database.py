@@ -35,7 +35,7 @@ else:
 
 
 _ENGINE: str | None = None
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME") or os.environ.get("RENDER"):
     _SQLITE_PATH = Path("/tmp/ecommerce.db")
 else:
     _SQLITE_PATH = settings.BASE_DIR / "ecommerce.db"
@@ -56,8 +56,8 @@ def _detect_engine() -> str:
     if forced:
         raise ValueError("DATABASE_ENGINE must be set to 'postgres' or 'sqlite'.")
 
-    # If running on Vercel without a configured remote PGHOST, default to sqlite
-    if os.environ.get("VERCEL") and (not os.environ.get("PGHOST") or os.environ.get("PGHOST") == "localhost"):
+    # If running on Vercel or Render without a configured remote PGHOST, default to sqlite
+    if (os.environ.get("VERCEL") or os.environ.get("RENDER")) and (not os.environ.get("PGHOST") or os.environ.get("PGHOST") in ("localhost", "127.0.0.1")):
         _ENGINE = "sqlite"
         return _ENGINE
 
@@ -74,7 +74,7 @@ def _detect_engine() -> str:
                 _ENGINE = "postgres"
                 return _ENGINE
         except psycopg.Error as error:
-            if os.environ.get("VERCEL"):
+            if os.environ.get("VERCEL") or os.environ.get("RENDER"):
                 _ENGINE = "sqlite"
                 return _ENGINE
             raise RuntimeError(
@@ -82,7 +82,7 @@ def _detect_engine() -> str:
                 "DATABASE_ENGINE=sqlite for local development."
             ) from error
 
-    if os.environ.get("VERCEL"):
+    if os.environ.get("VERCEL") or os.environ.get("RENDER"):
         _ENGINE = "sqlite"
         return _ENGINE
 

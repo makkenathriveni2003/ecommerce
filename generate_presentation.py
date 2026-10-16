@@ -110,7 +110,7 @@ def create_presentation():
     p_main.space_after = Pt(14)
 
     p_sub = tf1.add_paragraph()
-    p_sub.text = "A 24-Day Immersion in Full-Stack Web, Generative AI, Microservices & AWS DevOps"
+    p_sub.text = "A 25-Day Immersion: Full-Stack Web, Generative AI, Microservices, AWS DevOps & Production Capstone"
     p_sub.font.size = Pt(18)
     p_sub.font.color.rgb = RGBColor(148, 163, 184)
 
@@ -137,8 +137,8 @@ def create_presentation():
     s1.notes_slide.notes_text_frame.text = (
         "Good morning mentors, coordinators, and fellow interns! My name is Makkena Thriveni. "
         "Today, I am proud and excited to present my journey in the Batch-7 Knowledge Factory Programme "
-        "at CoastalSeven Technologies. Over these 24 intensive days, I evolved from classroom theory to architecting, "
-        "building, and deploying production-grade, AI-powered cloud applications."
+        "at CoastalSeven Technologies. Over these 25 intensive days culminating in our Day 25 Capstone, "
+        "I evolved from classroom theory to architecting, load-testing, and deploying production-grade, AI-powered cloud applications."
     )
 
     # ==========================================
@@ -227,21 +227,21 @@ def create_presentation():
 
     add_card(
         s3, Inches(9.8), Inches(1.8), Inches(2.7), Inches(5.0),
-        "Phase 4: Cloud & DevOps",
+        "Phase 4: Cloud & Capstone",
         [
-            "Docker multi-container stack.",
-            "AWS EC2 Linux deployment.",
-            "Nginx SSL / Let's Encrypt.",
-            "Sentry & Prometheus metrics.",
-            "Vercel multi-service hosting."
+            "Gunicorn + Uvicorn workers.",
+            "PostgreSQL QueuePool tuning.",
+            "Locust 100-user load testing.",
+            "Docker CPU/memory limits.",
+            "pg_dump automated backups."
         ],
-        badge="Days 23 - 24"
+        badge="Days 23 - 25"
     )
 
     s3.notes_slide.notes_text_frame.text = (
         "Our journey was structured in four progressive phases: Starting with robust FastAPI backend foundations and security, "
         "advancing to modern React 19 UI with real-time WebSockets, integrating GenAI and RAG with ChromaDB and Celery for async tasks, "
-        "and concluding with complete DevOps—Docker containerization, AWS EC2, Nginx HTTPS, and Vercel deployment."
+        "and culminating in Day 25 Capstone—Gunicorn concurrency, database connection pooling, Locust load testing, and automated disaster recovery."
     )
 
     # ==========================================
@@ -276,20 +276,22 @@ def create_presentation():
 
     add_card(
         s4, Inches(8.8), Inches(1.8), Inches(3.7), Inches(5.0),
-        "Cloud, DevOps & Quality",
+        "Cloud, DevOps & Capstone",
         [
-            "Docker & Compose: Multi-container orchestration with health checks.",
-            "AWS EC2 & IAM: Security groups, least privilege, and SSH hardening.",
-            "Observability: Sentry error tracking & Prometheus /metrics.",
-            "Test-Driven Engineering: 132 automated tests with 100% pass rate."
+            "Gunicorn & Uvicorn: Production multi-worker process management.",
+            "QueuePool Tuning: PostgreSQL connection pooling for 100 users.",
+            "Docker Governance: CPU & memory limits, log rotation on 7 containers.",
+            "Disaster Recovery: Automated pg_dump backups with SHA-256.",
+            "Locust Load SLA: 100 users, 405 RPS, p95 46ms, 0.00% errors."
         ],
-        badge="Production & Cloud"
+        badge="Production & Capstone"
     )
 
     s4.notes_slide.notes_text_frame.text = (
         "Here is the technical matrix I've mastered. On the core stack: FastAPI, React 19, and TypeScript. "
         "On AI: Retrieval-Augmented Generation with ChromaDB, paired with Celery distributed workers and Redis caching. "
-        "On cloud and DevOps: Docker multi-containerization, AWS EC2, Nginx SSL, Prometheus metrics, and test automation."
+        "On cloud, DevOps and Capstone: Gunicorn process supervision, PostgreSQL connection pooling, Docker resource limits, "
+        "disaster recovery drills, and 100-user load testing meeting high-concurrency SLAs."
     )
 
     # ==========================================

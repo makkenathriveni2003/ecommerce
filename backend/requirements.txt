@@ -18,3 +18,5 @@ langchain-core>=1.0.0
 langchain-text-splitters>=1.0.0
 sentry-sdk>=2.0.0
 prometheus-client>=0.20.0
+gunicorn>=22.0.0
+

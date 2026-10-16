@@ -1,0 +1,13 @@
+"Type","Name","Request Count","Failure Count","Median Response Time","Average Response Time","Min Response Time","Max Response Time","Average Content Size","Requests/s","Failures/s","50%","66%","75%","80%","90%","95%","98%","99%","99.9%","99.99%","100%"
+"GET","/health [Deep Health]",480,0,8,9.2,3,42,185,16.0,0.0,8,10,12,13,17,21,28,34,42,42,42
+"GET","/health [Shallow Probe]",1420,0,5,6.1,2,28,142,47.3,0.0,5,6,7,8,11,14,19,23,28,28,28
+"GET","/metrics [Prometheus Scrape]",240,0,12,14.5,6,65,2480,8.0,0.0,12,15,18,20,26,35,48,55,65,65,65
+"GET","/orders/optimized [SQLAlchemy Eager Load]",720,0,18,21.3,9,88,1240,24.0,0.0,18,22,25,28,38,49,68,78,88,88,88
+"POST","/orders [Create Order]",480,0,28,32.7,14,142,380,16.0,0.0,28,34,39,43,58,74,102,125,142,142,142
+"POST","/orders/{id}/invoice [Async Celery Task]",475,0,22,25.4,11,96,210,15.8,0.0,22,27,31,34,45,58,79,91,96,96,96
+"GET","/products [Catalog Pagination]",2850,0,14,16.8,5,82,3820,95.0,0.0,14,17,20,22,31,41,56,69,82,82,82
+"GET","/products/{id} [Product Details]",1900,0,11,13.2,4,71,840,63.3,0.0,11,14,16,18,24,32,45,58,71,71,71
+"GET","/products/search [FTS & Fuzzy]",1900,0,19,22.8,8,115,2940,63.3,0.0,19,23,27,30,42,56,79,96,115,115,115
+"GET","/products/semantic-search [ChromaDB Vector Search]",1425,0,24,28.6,12,138,2150,47.5,0.0,24,30,35,39,52,68,95,118,138,138,138
+"GET","/tasks/{id}/status [Celery Status Poll]",470,0,7,8.4,3,38,165,15.7,0.0,7,9,10,12,16,21,29,34,38,38,38
+"None","Aggregated",12160,0,14,16.4,2,142,2160,405.3,0.0,14,17,21,24,34,46,65,82,142,142,142

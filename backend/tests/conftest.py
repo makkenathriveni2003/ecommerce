@@ -10,10 +10,16 @@ if str(backend_dir) not in sys.path:
 from app.main import app
 from app.db.database import initialize_database
 from app.core.security import create_access_token
+from app.tasks.celery_app import celery_app
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
+    celery_app.conf.update(
+        task_always_eager=True,
+        task_eager_propagates=True,
+        task_store_eager_result=True,
+    )
     initialize_database()
 
 

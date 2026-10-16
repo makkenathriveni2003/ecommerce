@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: shopzone-backend
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_ENGINE
+        value: sqlite
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_ORIGINS
+        value: "*"
+      - key: JWT_SECRET_KEY
+        value: fZr7Wf-hO_iq7j3rM0ripJd0fidB7OoxeXV3Ur_OJQcqArNurmt_GLIEKpN7EB4o
+      - key: RATE_LIMIT_ENABLED
+        value: "false"
+      - key: EMBEDDING_PROVIDER
+        value: local_hash
+      - key: CHROMA_PERSIST_DIR
+        value: chroma_db
+      - key: AI_PRIMARY_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash

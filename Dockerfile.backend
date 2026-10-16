@@ -58,8 +58,9 @@ RUN groupadd -g 1001 thriveni && \
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 
-# Copy application source code
+# Copy application source code and production gunicorn config
 COPY backend ./backend
+COPY gunicorn_conf.py ./gunicorn_conf.py
 
 # Create required directories for persistent storage and logs with permissions
 RUN mkdir -p /app/backend/data /app/logs /app/uploads && \
@@ -75,5 +76,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Production server entrypoint
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers"]
+# Production server entrypoint: Gunicorn process manager with Uvicorn worker class
+CMD ["gunicorn", "-c", "gunicorn_conf.py", "backend.app.main:app"]
+

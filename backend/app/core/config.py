@@ -26,6 +26,13 @@ class Settings:
     PGUSER: str = os.getenv("PGUSER", "Thriveni").strip()
     PGPASSWORD: str = os.getenv("PGPASSWORD", "").strip()
 
+    # Database Connection Pooling Settings (Day 25 Capstone)
+    DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "20"))
+    DB_MAX_OVERFLOW: int = int(os.getenv("DB_MAX_OVERFLOW", "30"))
+    DB_POOL_TIMEOUT: int = int(os.getenv("DB_POOL_TIMEOUT", "30"))
+    DB_POOL_RECYCLE: int = int(os.getenv("DB_POOL_RECYCLE", "1800"))
+    DB_POOL_PRE_PING: bool = os.getenv("DB_POOL_PRE_PING", "true").lower() in ("true", "1", "yes")
+
     # JWT Authentication
     JWT_SECRET_KEY: str = os.getenv(
         "JWT_SECRET_KEY", "fZr7Wf-hO_iq7j3rM0ripJd0fidB7OoxeXV3Ur_OJQcqArNurmt_GLIEKpN7EB4o"

@@ -1,0 +1,335 @@
+# ==============================================================================
+# ShopZone Day 25 Capstone - Production Docker Compose Stack
+# Hardened multi-container production stack with complete Docker Resource Management
+# (CPU & RAM limits/reservations), Gunicorn+Uvicorn workers, PostgreSQL connection
+# pooling, logging rotation, and automated Let's Encrypt SSL reverse proxy.
+# ==============================================================================
+
+name: shopzone-capstone-prod
+
+networks:
+  shopzone-prod-network:
+    driver: bridge
+    name: shopzone-prod-network
+
+volumes:
+  postgres_prod_data:
+    name: shopzone_postgres_prod_data
+  redis_prod_data:
+    name: shopzone_redis_prod_data
+  chroma_prod_data:
+    name: shopzone_chroma_prod_data
+  app_prod_logs:
+    name: shopzone_app_prod_logs
+  db_backups:
+    name: shopzone_db_backups
+  certbot_conf:
+    name: shopzone_certbot_conf
+  certbot_www:
+    name: shopzone_certbot_www
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL 16 Relational Database (Connection Pooled)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopzone-prod-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shopzone_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-shopzone_production}
+      PGDATA: /var/lib/postgresql/data/pgdata
+      # PostgreSQL internal connection max cap
+      POSTGRES_MAX_CONNECTIONS: "100"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - db_backups:/backups
+    networks:
+      - shopzone-prod-network
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-shopzone_admin} -d $${POSTGRES_DB:-shopzone_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 2. Redis 7 In-Memory Cache & Celery Task Broker
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: shopzone-prod-redis
+    restart: unless-stopped
+    command: [
+      "redis-server",
+      "--appendonly", "yes",
+      "--requirepass", "${REDIS_PASSWORD:-prodsecret}",
+      "--maxmemory", "200mb",
+      "--maxmemory-policy", "allkeys-lru"
+    ]
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - shopzone-prod-network
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-prodsecret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 3. ChromaDB Vector Database (Semantic Search / RAG Store)
+  # ----------------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: shopzone-prod-chromadb
+    restart: unless-stopped
+    volumes:
+      - chroma_prod_data:/chroma/chroma
+    networks:
+      - shopzone-prod-network
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    expose:
+      - "8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.20"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 4. FastAPI Application Backend (Gunicorn + Uvicorn Workers)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:capstone
+    container_name: shopzone-prod-backend
+    restart: unless-stopped
+    command: ["gunicorn", "-c", "gunicorn_conf.py", "backend.app.main:app"]
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_ENGINE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopzone_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-shopzone_production}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-shopzone_production}
+      PGUSER: ${POSTGRES_USER:-shopzone_admin}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      # Database connection pooling for 50-100 concurrent requests
+      DB_POOL_SIZE: 20
+      DB_MAX_OVERFLOW: 30
+      DB_POOL_TIMEOUT: 30
+      DB_POOL_RECYCLE: 1800
+      DB_POOL_PRE_PING: "true"
+      # Celery & Redis
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CHROMA_PERSIST_DIRECTORY: /app/data/chroma_db
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      WEB_CONCURRENCY: 4
+    volumes:
+      - app_prod_logs:/app/logs
+      - db_backups:/app/backups
+    networks:
+      - shopzone-prod-network
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1024M
+        reservations:
+          cpus: "0.50"
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 5. Celery Asynchronous Background Worker
+  # ----------------------------------------------------------------------------
+  celery_worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:capstone
+    container_name: shopzone-prod-celery-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "worker", "--loglevel=info", "-c", "2"]
+    env_file:
+      - .env.example
+    environment:
+      DATABASE_ENGINE: postgres
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopzone_admin}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-shopzone_production}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-shopzone_production}
+      PGUSER: ${POSTGRES_USER:-shopzone_admin}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+    volumes:
+      - app_prod_logs:/app/logs
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 6. Celery Beat Periodic Scheduler
+  # ----------------------------------------------------------------------------
+  celery_beat:
+    build:
+      context: ..
+      dockerfile: Dockerfile.backend
+    image: shopzone-backend:capstone
+    container_name: shopzone-prod-celery-beat
+    restart: unless-stopped
+    command: ["celery", "-A", "backend.app.tasks.celery_app", "beat", "--loglevel=info"]
+    env_file:
+      - .env.example
+    environment:
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/1
+      REDIS_URL: redis://:${REDIS_PASSWORD:-prodsecret}@redis:6379/0
+    volumes:
+      - app_prod_logs:/app/logs
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+        reservations:
+          cpus: "0.05"
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ----------------------------------------------------------------------------
+  # 7. Nginx Production Reverse Proxy (Ports 80 & 443 with SSL)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: shopzone-prod-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - shopzone-prod-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+        reservations:
+          cpus: "0.10"
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
