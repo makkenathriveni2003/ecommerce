@@ -184,8 +184,11 @@ def health(strict: bool = False) -> JSONResponse:
     except Exception as redis_err:
         logger.debug("Redis health probe failed: %s", redis_err)
 
-    from app.db.session import get_db_pool_status
-    pool_metrics = get_db_pool_status()
+    try:
+        from .db.session import get_db_pool_status
+        pool_metrics = get_db_pool_status()
+    except Exception:
+        pool_metrics = {"pool": "sqlite_fallback"}
 
     components = {
         "database": "healthy" if db_ok else "unhealthy",

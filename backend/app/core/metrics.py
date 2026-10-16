@@ -11,30 +11,43 @@ from prometheus_client import (
     Counter,
     Gauge,
     Histogram,
+    REGISTRY,
     generate_latest,
 )
 
-# Standard HTTP metrics
-HTTP_REQUESTS_TOTAL = Counter(
+def _get_or_create(cls, name, *args, **kwargs):
+    if name in REGISTRY._names_to_collectors:
+        return REGISTRY._names_to_collectors[name]
+    try:
+        return cls(name, *args, **kwargs)
+    except Exception:
+        return REGISTRY._names_to_collectors.get(name)
+
+# Standard HTTP metrics (safe against re-imports / multi-module aliases)
+HTTP_REQUESTS_TOTAL = _get_or_create(
+    Counter,
     "http_requests_total",
     "Total HTTP request count partitioned by method, endpoint, and status code",
     ["method", "endpoint", "status_code"],
 )
 
-HTTP_REQUEST_DURATION_SECONDS = Histogram(
+HTTP_REQUEST_DURATION_SECONDS = _get_or_create(
+    Histogram,
     "http_request_duration_seconds",
     "HTTP request latency in seconds",
     ["method", "endpoint"],
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
 )
 
-HTTP_ERRORS_TOTAL = Counter(
+HTTP_ERRORS_TOTAL = _get_or_create(
+    Counter,
     "http_errors_total",
     "Total count of HTTP 4xx client errors and 5xx server errors",
     ["method", "endpoint", "error_type"],
 )
 
-APP_INFO = Gauge(
+APP_INFO = _get_or_create(
+    Gauge,
     "shopzone_app_info",
     "Application metadata information",
     ["version", "environment", "service"],
